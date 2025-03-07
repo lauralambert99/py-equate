@@ -12,9 +12,12 @@ import itertools
 #%%
 
 #Get data
-ADM1 = pd.read_csv(r'C:\Users\laycocla\OneDrive - James Madison University\Documents\A&M\Equating\Homework_1\form_y.csv')
-ADM2 = pd.read_csv(r'C:\Users\laycocla\OneDrive - James Madison University\Documents\A&M\Equating\Homework_1\form_x.csv')
+ADM1 = pd.read_csv(r'C:\Users\Laura\OneDrive - James Madison University\Documents\A&M\Equating\Homework_1\form_y.csv')
+ADM2 = pd.read_csv(r'C:\Users\Laura\OneDrive - James Madison University\Documents\A&M\Equating\Homework_1\form_x.csv')
 
+#Vectors of columns
+form_x = ADM2['x']
+form_y = ADM1['x']
 
 #First, get in a table
 pfreq_x = ADM2['x'].value_counts().sort_index()
@@ -45,51 +48,45 @@ pdata = pd.DataFrame({'Score': scores, 'X': array_x, 'Y': array_y})
 
 
 #%%
-#NEEDS WORK - SEE TEST BELOW
-def freqtab(data, scales = None, items = None):
+
+def freqtab(data1, data2):
     """
-    A function to create a frequency table for equating from a dataframe
+    A function to create a frequency table for equating from two score vectors
+    
     Parameters
     ----------
-    x : a pd.dataframe with total scores
-    scales : provides the measurement scales for the specified variables
-    items: which columns are to be used in the frequency table
+    data1: a vector or list of scores on the OLD form
+    data2: a vector or list of scores on the NEW form
     
     Returns: a frequency table
+    
+    Depends: pandas, itertools
 
     """
     #Make sure it's a dataframe
-    data = pd.DataFrame(data)
-      
-    #Get number of columns in the data
-    nx = data.shape[1]
-    
-    #If scales = none, compute scales from data (it would run min to max for each column)
-    if scales is None:
-        scales = [list(range(int(data[col].min()), int(data[col].max()) + 1)) for col in data.columns]
-    
-    #Ensure scales is a list of lists
-    if not isinstance(scales, list):
-        scales = [scales]
+    data = pd.DataFrame({'X': data1, 'Y': data2})
+     
+    #Get the range of each form
+    formx_range = range(int(data['X'].min()), int(data['X'].max()) + 1)  #Need the plus one because not inclusive
+    formy_range = range(int(data['Y'].min()), int(data['Y'].max()) + 1)  
 
-    # Convert each column to categorical with the provided or computed scales
-    for i in range(nx):
-        data.iloc[:, i] = pd.Categorical(data.iloc[:, i], categories=scales[i], ordered=True)
+    #Create a grid of all different observed score combinations
+    all_combinations = pd.DataFrame(itertools.product(formx_range, formy_range), columns=['X', 'Y'])
+
+    #Get frequency counts
+    freq_table = data.groupby(['X', 'Y']).size().reset_index(name='count')
+
+    #Merge with all possible observed combinations, filling missing counts with 0
+    full_freq_table = all_combinations.merge(freq_table, on=['X', 'Y'], how='left').fillna(0)
+
+    #Make sure 'count' is integer
+    full_freq_table['count'] = full_freq_table['count'].astype(int)
+
+    #Rename columns to something understandable
+    full_freq_table.columns = ['X', 'Y', 'count']
+  
     
-    #Check if items are provided
-    if items is not None:
-        if not isinstance(items, list):
-            items = [items]
-        
-        #Row sums for selected items
-        data = pd.DataFrame({i: data[i].sum(axis=1) if isinstance(data[i], pd.DataFrame) else data[i] 
-                             for i in items})
-        
-    # Create a frequency table (similar to 'table' in R)
-    freq_table = data.apply(pd.Series.value_counts).fillna(0)
-    
-    
-    return freq_table
+    return full_freq_table
 
 def linear(x, y, type="linear"):
     """
@@ -130,36 +127,12 @@ def linear(x, y, type="linear"):
 #%%
 #Testing
 #Freqtab first
-
-#Scores as a dataframe
-test = pd.DataFrame({'X': ADM2['x'], 'Y': ADM1['x']})
-
-#Define the full range of possible scores
-#This only counts scores that were observed - no zeros for unobserved combinations
-formx_range = range(int(test['X'].min()), int(test['X'].max()) + 1)  #Need the plus one because not inclusive
-formy_range = range(int(test['Y'].min()), int(test['Y'].max()) + 1)  
-
-#Create a grid of all different observed score combinations
-all_combinations = pd.DataFrame(itertools.product(formx_range, formy_range), columns=['X', 'Y'])
-
-#Get frequency counts
-freq_table = test.groupby(['X', 'Y']).size().reset_index(name='count')
-
-#Merge with all possible observed combinations, filling missing counts with 0
-full_freq_table = all_combinations.merge(freq_table, on=['X', 'Y'], how='left').fillna(0)
-
-#Make sure 'count' is integer
-full_freq_table['count'] = full_freq_table['count'].astype(int)
-
-#Rename columns to something I understand
-full_freq_table.columns = ['X', 'Y', 'count']
-
-
+data = freqtab(form_x, form_y)
 
 #Test mean and linear equating using function
-lx = linear(full_freq_table['X'], full_freq_table['Y'])
+lx = linear(data['X'], data['Y'])
 
-mx = linear(full_freq_table['X'], full_freq_table['Y'], type = "mean")
+mx = linear(data['X'], data['Y'], type = "mean")
 
 
 
