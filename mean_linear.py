@@ -49,7 +49,7 @@ pdata = pd.DataFrame({'Score': scores, 'X': array_x, 'Y': array_y})
 
 #%%
 
-def freqtab(data1, data2):
+def freqtab(data2, data1):
     """
     A function to create a frequency table for equating from two score vectors
     
