@@ -64,7 +64,7 @@ def freqtab(data1, data2):
 
     """
     #Make sure it's a dataframe
-    data = pd.DataFrame({'X': data1, 'Y': data2})
+    data = pd.DataFrame({'X': data2, 'Y': data1})
      
     #Get the range of each form
     formx_range = range(int(data['X'].min()), int(data['X'].max()) + 1)  #Need the plus one because not inclusive
