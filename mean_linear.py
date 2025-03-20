@@ -7,7 +7,6 @@ Created on Fri Feb 21 10:54:01 2025
 
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 import itertools
 #%%
 
@@ -88,7 +87,7 @@ def freqtab(data2, data1):
     
     return full_freq_table
 
-def linear(x, y, type="linear"):
+def linear(x, y, type="linear", rescale=False):
     """
     A function to perform mean and linear equating.
 
@@ -96,13 +95,20 @@ def linear(x, y, type="linear"):
     x : array of new scores
     y : array of old scores 
     type : str, optional
-        Type of equating. Either "mean" (mean equating) or "linear" (linear equating) are accepted
+        Type of equating. "mean" (mean equating),  "linear" (linear equating), "zscore" (z-score equating) are accepted
         Default is "linear".
+    rescale : bool, optional
+        Whether to rescale scores to a 0-100 range. Default is False.
 
     Returns:
     dict
         A dictionary containing yx values for equated x scores
     """
+
+    if rescale:
+        x = (x - np.min(x)) / (np.max(x) - np.min(x)) * 100
+        y = (y - np.min(y)) / (np.max(y) - np.min(y)) * 100
+
 
     #Compute the means of x and y
     mean_x = np.mean(x)
@@ -112,17 +118,23 @@ def linear(x, y, type="linear"):
         #Mean equating: align the means of x and y
         intercept = mean_y - mean_x
         slope = 1  #No change in slope with mean equating, just intercepts
-        yx = x + intercept
     elif type == "linear":
         #Linear equating: align both the means and standard deviations
         sd_x = np.std(x)  #Standard deviation of x
         sd_y = np.std(y)  #Standard deviation of y
         slope = sd_y / sd_x  #Ratio of standard deviations
         intercept = mean_y - slope * mean_x  
-        yx = slope*x + intercept
+    elif type == "zscore":
+        slope = 1
+        intercept = 0
+        x = (x - mean_x) / np.std(x)
+        y = (y - mean_y) / np.std(y)
+    else:
+        raise ValueError("Invalid 'type'. Use 'mean', 'linear', or 'zscore'.")
+        
+    #Return equated scores as a dictionary   
+    return {'yx': slope * x + intercept}
 
-    # Return the slope and intercept as a dictionary
-    return {'yx':yx}
 
 #%%
 #Testing
