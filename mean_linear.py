@@ -87,13 +87,15 @@ def freqtab(data2, data1):
     
     return full_freq_table
 
-def linear(x, y, type="linear", rescale=False):
+def linear(x, y, score_min, score_max, type="linear", rescale=False):
     """
     A function to perform mean and linear equating.
 
     Parameters:
     x : array of new scores
     y : array of old scores 
+    score_min: minimum score on the form
+    score_max:
     type : str, optional
         Type of equating. "mean" (mean equating),  "linear" (linear equating), "zscore" (z-score equating) are accepted
         Default is "linear".
@@ -108,8 +110,10 @@ def linear(x, y, type="linear", rescale=False):
     if rescale:
         x = (x - np.min(x)) / (np.max(x) - np.min(x)) * 100
         y = (y - np.min(y)) / (np.max(y) - np.min(y)) * 100
-
-
+    
+    #Define scores
+    scores = np.arange(score_min, score_max)
+    
     #Compute the means of x and y
     mean_x = np.mean(x)
     mean_y = np.mean(y)
@@ -133,18 +137,18 @@ def linear(x, y, type="linear", rescale=False):
         raise ValueError("Invalid 'type'. Use 'mean', 'linear', or 'zscore'.")
         
     #Return equated scores as a dictionary   
-    return {'yx': slope * x + intercept}
+    return {'yx': slope * scores + intercept}
 
 
 #%%
 #Testing
-#Freqtab first
-data = freqtab(form_x, form_y)
+
+data = pd.DataFrame('X':ADM2['x'], 'Y':ADM1['x'])
 
 #Test mean and linear equating using function
-lx = linear(data['X'], data['Y'])
-
+lx = linear(ADM2['x'], ADM1['x'], 0, 50)
+print(lx)
 mx = linear(data['X'], data['Y'], type = "mean")
 
-
+scores = list(range(0, 50))
 
