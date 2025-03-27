@@ -1,3 +1,4 @@
+    
 # -*- coding: utf-8 -*-
 """
 Created on Fri Mar 14 09:07:55 2025
@@ -31,106 +32,65 @@ def equipercen(x, y, score_min, score_max):
     TO-DO: Pop out little embedded functions into their own things?
 
     """
+    #Convert to series just in case?
+    x = pd.Series(x)
+    y = pd.Series(y)
     
     #First, get values in a table
-    pfreq_x = x.value_counts().sort_index()
-    pfreq_y = y.value_counts().sort_index()
-
-
-    #Put in a dictionary
-    dict_x = pfreq_x.to_dict()
-    dict_y = pfreq_y.to_dict()
-
-    #Make a vector of scores
-    #Remember python is a 0 index, and doesn't include the last number - CHECK THAT SCORES IS MADE RIGHT
-    scores = np.arange(score_min, (score_max + 1))
-
-    #Make empty arrays
-    array_x = np.zeros(len(scores), dtype = int)
-    array_y = np.zeros(len(scores), dtype = int)
-
-    #Fill the arrays
-    for key, value in dict_x.items():
-      array_x[key] = value
-      
-    for key, value in dict_y.items():
-      array_y[key] = value
-
-    #Combine into a dataframe
-    pdata = pd.DataFrame({'Score': scores, 'X': array_x, 'Y': array_y})
+    pfreq_x = x.value_counts().reindex(range(score_min, score_max + 1), fill_value=0).sort_index()
+    pfreq_y = y.value_counts().reindex(range(score_min, score_max + 1), fill_value=0).sort_index()
 
     
     #Calculate f(x) and g(y)
-    pdata['f_x'] = pdata['X']/sum(pdata['X'])
-    pdata['g_y'] = pdata['Y']/sum(pdata['Y'])
+    f_x = pfreq_x/pfreq_x.sum()
+    g_y = pfreq_y/pfreq_y.sum()
     
     #Calculate F(x) and G(y)
-    pdata['Fx'] = np.cumsum(pdata['f_x'])
-    pdata['Gy'] = np.cumsum(pdata['g_y'])
+    Fx = f_x.cumsum()
+    Gy = g_y.cumsum()
 
-    pdata['Px'] = 100*(pdata['Fx'].shift(1) + (pdata['f_x']/2))
-    pdata['Qy'] = 100*(pdata['Gy'].shift(1) + (pdata['g_y']/2))
+    Px = 100*(Fx.shift(1, fill_value = 0) + f_x/2)
+    Qy = 100*(Gy.shift(1, fill_value = 0) + g_y/2)
     
     #Make G(y) * 100 value column - easier to reference this
-    pdata['Gy_100'] = pdata['Gy']*100
+    Gy_100 = Gy*100
 
     #Make a function to take each P(x) value and find the smallest Gy_100 value that is => to it
-    #Should these be popped out into their own functions??
-
-    #Started by finding  smallest GY_100 >= Px
-    def find_gte_Gy(Px, Gy100):
-      Gy_gte = Gy100[Gy100 >= Px] #First, get values
-      
-      if len(Gy_gte) > 0:
-        return Gy_gte.min()
-      else:
-        return None
-
-    pdata['min_Gy'] = pdata['Px'].apply(lambda Px: find_gte_Gy(Px, pdata['Gy_100']))
 
     #But what we really want is the corresponding Y value
     #Edit above to give us that
     def find_Y_star(Px, Gy, Y):
-      gte = np.where(Gy >= Px)[0]
-      
-      if len(gte) > 0:
-        Gy_index = gte[np.argmin(Gy[gte])]
-        return Y[Gy_index]
-      else:
-        return None
+      idx = np.searchsorted(Gy, Px, side="left")
+      return Y[idx] if idx < len(Y) else None
+
+    scores = np.arange(score_min, score_max + 1)
+    pdata = pd.DataFrame({
+        'Score': scores, 
+        'X': pfreq_x.values, 
+        'Y': pfreq_y.values, 
+        'f_x': f_x.values, 
+        'g_y': g_y.values, 
+        'Fx': Fx.values, 
+        'Gy': Gy.values,
+        'Px': Px.values,
+        'Gy_100': Gy_100.values
+    })
 
     #Use the function to make a new column 
     pdata['Y_star_u'] = pdata['Px'].apply(lambda Px: find_Y_star(Px, pdata['Gy_100'], pdata['Score']))
 
-    #Make a G(Y*u) column
-    def find_GY_star(Y_star, Y, Gy):
-      
-      try:
-        get_index = Y.index(Y_star)
-        return Gy[get_index]
-      except ValueError:
-        return None
-
-    #Make the GY* column
-    pdata['Gy_star'] = pdata['Y_star_u'].apply(lambda Y_star_u: find_GY_star(Y_star_u, pdata['Score'].tolist(), pdata['Gy'].tolist()))
-
-
-    #Will also need a lag Y*u for equation
-    def find_GY_star_lag(Y_star, Y, Gy):
-      
-      try:
-        get_index = Y.index(Y_star - 1)
-        return Gy[get_index]
-      except ValueError:
-        return None
-
-    pdata['Gy_star_lag'] = pdata['Y_star_u'].apply(lambda Y_star_u: find_GY_star_lag(Y_star_u, pdata['Score'].tolist(), pdata['Gy'].tolist()))
-
-    #Now, calculate e(y)x
-    ey_x = ((((pdata['Px']/100) - pdata['Gy_star_lag'])/(pdata['Gy_star'] - pdata['Gy_star_lag'])) + (pdata['Y_star_u'] - 0.5))
+    #Compute G(Y*u)
+    pdata['Gy_star'] = pdata['Y_star_u'].apply(lambda y_star: Gy[y_star] if pd.notna(y_star) else None)
     
-    # Return the equated values
-    return {'yx':ey_x}
+    #Will also need a lag Y*u for equation
+    pdata['Gy_star_lag'] = pdata['Y_star_u'].apply(lambda y_star: Gy[y_star - 1] if pd.notna(y_star) and y_star > score_min else None)
+
+    # Compute equated scores
+    pdata['e_yx'] = ((((pdata['Px'] / 100) - pdata['Gy_star_lag']) / 
+                      (pdata['Gy_star'] - pdata['Gy_star_lag'])) + 
+                      (pdata['Y_star_u'] - 0.5))
+
+    return {'yx': pdata['e_yx']}
 
 
 #%%
