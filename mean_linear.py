@@ -140,8 +140,7 @@ def linear(x, y, score_min, score_max, type="linear", rescale=False):
     
     eq =  pd.DataFrame({'Score': scores,
                         'ex': ex})
-    #TODO: make output prettier
-    #Return equated scores as a dictionary   
+    #Return equated scores as a dataframe
     return eq
 
 #%%
@@ -152,6 +151,5 @@ def linear(x, y, score_min, score_max, type="linear", rescale=False):
 lx = linear(ADM2['x'], ADM1['x'], 0, 50)
 print(lx)
 mx = linear(ADM2['x'], ADM1['x'], 0, 50, type = "mean")
-
-scores = list(range(0, 50))
+print(mx)
 
