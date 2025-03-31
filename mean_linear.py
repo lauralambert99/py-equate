@@ -112,7 +112,7 @@ def linear(x, y, score_min, score_max, type="linear", rescale=False):
         y = (y - np.min(y)) / (np.max(y) - np.min(y)) * 100
     
     #Define scores
-    scores = np.arange(score_min, score_max)
+    scores = np.arange(score_min, score_max + 1)
     
     #Compute the means of x and y
     mean_x = np.mean(x)
@@ -135,20 +135,23 @@ def linear(x, y, score_min, score_max, type="linear", rescale=False):
         y = (y - mean_y) / np.std(y)
     else:
         raise ValueError("Invalid 'type'. Use 'mean', 'linear', or 'zscore'.")
-        
+    
+    ex = slope * scores + intercept
+    
+    eq =  pd.DataFrame({'Score': scores,
+                        'ex': ex})
+    #TODO: make output prettier
     #Return equated scores as a dictionary   
-    return {'yx': slope * scores + intercept}
-
+    return eq
 
 #%%
 #Testing
 
-data = pd.DataFrame('X':ADM2['x'], 'Y':ADM1['x'])
 
 #Test mean and linear equating using function
 lx = linear(ADM2['x'], ADM1['x'], 0, 50)
 print(lx)
-mx = linear(data['X'], data['Y'], type = "mean")
+mx = linear(ADM2['x'], ADM1['x'], 0, 50, type = "mean")
 
 scores = list(range(0, 50))
 
