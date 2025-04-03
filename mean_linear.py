@@ -109,6 +109,13 @@ def linear(x, y, score_min, score_max, type="linear", rescale=False, group="Rand
     DataFrame
         A DataFrame containing yx values for equated x scores
     """
+    #TODO: potential errors
+        #Negative score numbers
+        #Scores need to be numbers
+        #Maybe drop NAs
+        #SD of zero would be an issue!
+    #TODO: Testing function works as expected
+        
     #This should be the only score consideration, right?
     if group == "Single":
         #Make sure scores are paired for single group design

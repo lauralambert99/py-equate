@@ -31,6 +31,11 @@ def equipercen(x, y, score_min, score_max):
     TO-DO: Pop out little embedded functions into their own things?
 
     """
+    #TODO: potential errors
+        #If missing values for certain cells, may run into issues
+        #What to do with missing values
+    #TODO: Testing function works as expected
+    
     #Convert to series just in case?
     x = pd.Series(x)
     y = pd.Series(y)
