@@ -87,7 +87,7 @@ def freqtab(data2, data1):
     
     return full_freq_table
 
-def linear(x, y, score_min, score_max, type="linear", rescale=False):
+def linear(x, y, score_min, score_max, type="linear", rescale=False, group="Random"):
     """
     A function to perform mean and linear equating.
 
@@ -95,18 +95,26 @@ def linear(x, y, score_min, score_max, type="linear", rescale=False):
     x : array of new scores
     y : array of old scores 
     score_min: minimum score on the form
-    score_max:
+    score_max: maximum score on the form
     type : str, optional
         Type of equating. "mean" (mean equating),  "linear" (linear equating), "zscore" (z-score equating) are accepted
         Default is "linear".
     rescale : bool, optional
         Whether to rescale scores to a 0-100 range. Default is False.
+    group: str, optional
+        Type of group method of equating.  "Random" (Random groups design) and "Single" are accepted.
+        Default is "Random".
 
     Returns:
-    dict
-        A dictionary containing yx values for equated x scores
+    DataFrame
+        A DataFrame containing yx values for equated x scores
     """
-
+    #This should be the only score consideration, right?
+    if group == "Single":
+        #Make sure scores are paired for single group design
+        if len(x) != len(y):
+            raise ValueError("X and Y must have the same length for single-group equating (paired scores).")
+            
     if rescale:
         x = (x - np.min(x)) / (np.max(x) - np.min(x)) * 100
         y = (y - np.min(y)) / (np.max(y) - np.min(y)) * 100
