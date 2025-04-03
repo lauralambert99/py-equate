@@ -28,7 +28,6 @@ def equipercen(x, y, score_min, score_max):
     Depends: pandas, itertools
     
     TO-DO: Flexibility!
-    TO-DO: Probably don't need everything to be in a data frame
     TO-DO: Pop out little embedded functions into their own things?
 
     """
@@ -50,7 +49,6 @@ def equipercen(x, y, score_min, score_max):
     Gy = g_y.cumsum()
 
     Px = 100*(Fx.shift(1, fill_value = 0) + f_x/2)
-    Qy = 100*(Gy.shift(1, fill_value = 0) + g_y/2)
     
     #Make G(y) * 100 value column - easier to reference this
     Gy_100 = Gy*100
