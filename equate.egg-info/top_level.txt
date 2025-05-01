@@ -1,2 +1,2 @@
-methods
+equate
 tests

@@ -4,23 +4,15 @@ Created on Wed Apr  2 14:00:57 2025
 
 @author: Laura
 """
-import pandas as pd
-import numpy as np
 
-#%%
-#Read in data from HW4
-formx = pd.read_csv(r'C:\Users\Laura\OneDrive - James Madison University\Documents\A&M\Equating\HW4\formx.dat',
-                    sep='\s+')
-formy = pd.read_csv(r'C:\Users\Laura\OneDrive - James Madison University\Documents\A&M\Equating\HW4\formy.dat', 
-                    sep='\s+')
-
-
-#%%
-from methods.Tucker import Tucker
-from methods.LevineOS import LevineOS
-from methods.LevineTS import LevineTS
+from .methods.Tucker import Tucker
+from .methods.LevineOS import LevineOS
+from .methods.LevineTS import LevineTS
 #from methods.FE import FE
 #from methods.BH import BH
+
+import numpy as np
+import pandas as pd
 
 def neat(x, y, common_x, common_y, score_min, score_max, w1, items = "internal", method = "Tucker"):
     """
@@ -73,9 +65,3 @@ def neat(x, y, common_x, common_y, score_min, score_max, w1, items = "internal",
         raise ValueError(f"Unsupported method: {method}")
     
     
-#%%
-    
-#Testing
-neat(formx['Uncommon'], formy['Uncommon'], formx['Anchor'], formy['Anchor'], 0, 80, w1 = 0.5, method="Tucker")    
- 
-neat(formx['Uncommon'], formy['Uncommon'], formx['Anchor'], formy['Anchor'], 0, 80, w1 = 0.5, method="LevineOS")    
