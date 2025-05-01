@@ -9,9 +9,9 @@ import numpy as np
 import itertools
 #%%
 #Read in data from HW4
-formx = pd.read_csv(r'C:\Users\Laura\OneDrive - James Madison University\Documents\A&M\Equating\HW4\formx.dat',
+formx = pd.read_csv(r'C:\Users\laycocla\OneDrive - James Madison University\Documents\A&M\Equating\HW4\formx.dat',
                     sep='\s+')
-formy = pd.read_csv(r'C:\Users\Laura\OneDrive - James Madison University\Documents\A&M\Equating\HW4\formy.dat',
+formy = pd.read_csv(r'C:\Users\laycocla\OneDrive - James Madison University\Documents\A&M\Equating\HW4\formy.dat',
                     sep='\s+')
 
 #Establish synthetic population items
@@ -44,69 +44,67 @@ ly_x = (sd_sx/sd_sy)*(scores - mu_sx) + mu_sy
 eyx = pd.DataFrame({'Scores': scores,
                    'ey': ly_x})
 #%%
+from .methods.Tucker import Tucker
+from .methods.LevineOS import LevineOS
+from .methods.LevineTS import LevineTS
+from .methods.FE import FE
+from .methods.BH import BH
 
 def neat(x, y, common_x, common_y, score_min, score_max, w1, items = "internal", method = "Tucker"):
     """
-    A function to perform single group equating.
+    Dispatches a single NEAT equating method.
 
     Parameters:
-    x : array of scores on Form X
-    y : array of scores on Form Y 
-    common: array of item numbers that are common between Form X and Form Y
-    score_min: minimum score on the form
-    score_max: maximum score on the form
-    w1: weight for group 1
-    items: str, optional
-        If anchor items are internal ("internal") or external ("external").
-        Default is "internal".
-    method: str, optional
-        Type of NEAT equating method.
-        Options include linear methods (Tucker as "Tucker", Levine Observed score as "LevineOS", and Levine True Score as "LevineTS"), equipercentile ("FE"), Braun-Holland ("BH").
-        Default is Tucker.
-    
-
+    - x, y: Array of raw scores for Form X and Form Y
+    - common_x, common_y: Array of anchor scores
+    - score_min, score_max: Score range of Form X to equate
+    - w1: Weight for group 1 (0 < w1 < 1)
+    - items: "internal" or "external" anchor design
+    - method: NEAT equating method (options include "Tucker", "LevineOS" (Levine observed score), 
+                                    "LevineTS" (Levine true score), "FE" (frequency estimation), 
+                                    and "BH"(Braun-Holland))
 
     Returns:
-    DataFrame
-        A DataFrame containing yx values for equated x scores
+    - DataFrame of equated scores
     """
     #TODO: Potential errors
         #For internal, common items score should not be larger than total score!
-        #Weights can't be negative!!
-        #Method needs to be one of the ones listed
-     
+
+    #Weight validataion
+    if not (0 <= w1 <= 1):
+        raise ValueError("w1 must be between 0 and 1")
+        
+    #Method validatation
+    valid_methods = ["Tucker", "LevineOS", "LevineTS", "FE", "BH"]
+    if method not in valid_methods:
+       raise ValueError(f"Method '{method}' not supported. Choose from {valid_methods}")
+        
     #Define scores
     scores = np.arange(score_min, score_max + 1)
+
+    if method == "Tucker":
+        return Tucker(x, y, common_x, common_y, scores, w1)
+
+    elif method == "LevineOS":
+        return allthethings
+
+    elif method == "LevineTS":
+        return allthethings
+
+    elif method == "FE":
+        return allthethings
+
+    elif method == "BH":
+        return allthethings
+
+    else:
+        raise ValueError(f"Unsupported method: {method}")
     
-    #Define weights
-    w1 = w1
-    w2 = (1 - w1)
     
-    #Calculate gamma
-    gamma_1 = common_x.cov(x/common_x.var())
-    gamma_2 = common_y.cov(y/common_y.var())
-
-    #Synthetic population stuff
-    mu_sx = np.mean(x) - w2*gamma_1*(np.mean(common_x) - np.mean(common_y))
-    mu_sy = np.mean(y) + w1*gamma_2*(np.mean(common_x) - np.mean(common_y))
-
-    var_sx = x.var() - w2*(gamma_1**2)*(common_x.var() - common_y.var()) + w1*w2*(gamma_1**2)*(np.mean(common_x) - np.mean(common_y))**2
-    var_sy = y.var() + w1*(gamma_2**2)*(common_x.var() - common_y.var()) + w1*w2*(gamma_2**2)*(np.mean(common_x) - np.mean(common_y))**2
-
-    #Get standard deviations
-    sd_sx = np.sqrt(var_sx)
-    sd_sy = np.sqrt(var_sy)
-    
-    ly_x = (sd_sx/sd_sy)*(scores - mu_sx) + mu_sy
-
-    eyx = pd.DataFrame({'Scores': scores,
-                       'ey': ly_x})
-    return eyx
-
 #%%
     
     #Do we need to add an argument for internal/external common items?
-neat(formx['Uncommon'], formy['Uncommon'], formx['Anchor'], formy['Anchor'], 0, 80, 0.5)    
+neat(formx['Uncommon'], formy['Uncommon'], formx['Anchor'], formy['Anchor'], 0, 80, w1 = 0.5, method="Tucker")    
  
     
 #Read in data
