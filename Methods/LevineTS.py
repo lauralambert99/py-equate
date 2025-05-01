@@ -23,17 +23,19 @@ def LevineTS(x, y, common_x, common_y, scores, w1):
   DataFrame of equated scores
   """
   
-    # Means and SDs
+    #Calculate Mean and SD of common items
     mean_cx = np.mean(common_x)
     mean_cy = np.mean(common_y)
     sd_cx = np.std(common_x, ddof=1)
     sd_cy = np.std(common_y, ddof=1)
 
-    # Apply the same formula as OS for now – update later with true score logic
+    #Apply the same formula as OS for now – update later with true score logic
     slope = sd_cy / sd_cx
     intercept = mean_cy - slope * mean_cx
 
-    scores = np.arange(score_min, score_max + 1)
-    equated = intercept + slope * scores
+    #Equate
+    ly_x = intercept + slope * scores
 
-    return pd.DataFrame({"score": scores, "equated": equated})
+    eyx = pd.DataFrame({'Scores': scores,
+                       'ey': ly_x})
+    return eyx

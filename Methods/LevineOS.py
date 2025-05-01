@@ -9,6 +9,18 @@ import numpy as np
 import pandas as pd
 
 def LevineOS(x, y, common_x, common_y, scores, w1):
+    """
+  Perform Levine Observed Score equating.
+
+  Parameters:
+  x, y: Array of raw scores for Form X and Form Y
+  common_x, common_y: Arrays of anchor scores for each form
+  scores: Array of score range to equate
+  w1: Weight for group 1
+
+  Returns:
+  DataFrame of equated scores
+  """
     
     #Calculate Mean and SD of common items
     mean_cx = np.mean(common_x)
