@@ -1,0 +1,17 @@
+README.md
+setup.py
+equate.egg-info/PKG-INFO
+equate.egg-info/SOURCES.txt
+equate.egg-info/dependency_links.txt
+equate.egg-info/requires.txt
+equate.egg-info/top_level.txt
+methods/LevineOS.py
+methods/LevineTS.py
+methods/Tucker.py
+methods/__init__.py
+tests/__init__.py
+tests/test_BH.py
+tests/test_FE.py
+tests/test_LevineOS.py
+tests/test_LevineTS.py
+tests/test_Tucker.py

@@ -5,7 +5,7 @@ Created on Thu May  1 07:58:54 2025
 @author: laycocla
 """
 
-from .neat import neat
+from .Package import neat
 from .methods.Tucker import Tucker
 from .methods.LevineOS import LevineOS
 from .methods.LevineTS import LevineTS

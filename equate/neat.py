@@ -6,12 +6,12 @@ Created on Wed Apr  2 14:00:57 2025
 """
 import pandas as pd
 import numpy as np
-import itertools
+
 #%%
 #Read in data from HW4
-formx = pd.read_csv(r'C:\Users\laycocla\OneDrive - James Madison University\Documents\A&M\Equating\HW4\formx.dat',
+formx = pd.read_csv(r'C:\Users\Laura\OneDrive - James Madison University\Documents\A&M\Equating\HW4\formx.dat',
                     sep='\s+')
-formy = pd.read_csv(r'C:\Users\laycocla\OneDrive - James Madison University\Documents\A&M\Equating\HW4\formy.dat',
+formy = pd.read_csv(r'C:\Users\Laura\OneDrive - James Madison University\Documents\A&M\Equating\HW4\formy.dat', 
                     sep='\s+')
 
 
@@ -63,11 +63,11 @@ def neat(x, y, common_x, common_y, score_min, score_max, w1, items = "internal",
     elif method == "LevineTS":
         return LevineTS(x, y, common_x, common_y, scores, w1)
 
-    elif method == "FE":
-        return allthethings
+    #elif method == "FE":
+     #   return allthethings
 
-    elif method == "BH":
-        return allthethings
+    #elif method == "BH":
+     #   return allthethings
 
     else:
         raise ValueError(f"Unsupported method: {method}")
