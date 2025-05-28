@@ -232,3 +232,56 @@ def reweight_conditional_distribution(
                     weighted_df.at[row, col] = pd.NA
 
     return weighted_df
+
+#%%
+#bh testing
+tablex = joint_distribution(formx, 'Uncommon', 'Anchor', rangex, rangev)
+tabley = joint_distribution(formy, 'Uncommon', 'Anchor', rangex, rangev)
+
+
+g1x_v2 = common_item_marginal(tablex)
+
+g2y_v2 = common_item_marginal(tabley)
+
+
+#Then, make conditional distribution tables
+cond_x = conditional_distribution(g1x_v2)
+cond_y = conditional_distribution(g2y_v2)
+
+#Calculate the opposite distributions for the forms
+#i.e., distribution of Form Y in population 1
+cond_x_pop2 = reweight_conditional_distribution(cond_x, other_marginals = cond_y.iloc[-1])
+cond_y_pop1 = reweight_conditional_distribution(cond_y, other_marginals = cond_x.iloc[-1])
+
+#Calculate synthetic population values
+f1x = tablex['Marginal']
+f2x = cond_x_pop2.iloc[:-1]['Marginal']
+
+g1y = cond_y_pop1.iloc[:-1]['Marginal']
+g2y = tabley['Marginal']
+
+
+#Marginal synthetic distributions
+fsx = w1*f1x + w2*f2x
+gsy = w1*g1y + w2*g2y
+
+x = formx['Uncommon'].value_counts().reindex(scores, fill_value=0).sort_index()
+y = formy['Uncommon'].value_counts().reindex(scores, fill_value=0).sort_index()  
+
+#Calculate means and standard deviations
+mu_sx = sum(x*fsx)  #Mean of synthetic population
+var_sx = sum(((x-mu_sx)**2)*fsx)  #Variance of synthtic population
+sd_sx = var_sx**0.5
+  
+mu_sy = sum(y*gsy)  #Mean of synthetic population
+var_sy = sum(((y-mu_sy)**2)*gsy)  #Variance of synthtic population
+sd_sy = var_sy**0.5
+  
+slope = sd_sy / sd_sx  #Ratio of standard deviations
+ 
+intercept = mu_sy - slope * mu_sx  
+  
+ex = slope * scores + intercept
+  
+eq =  pd.DataFrame({'Score': scores,
+                  'ex': ex})
