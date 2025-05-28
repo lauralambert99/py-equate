@@ -5,41 +5,66 @@ Created on Wed May 14 07:06:55 2025
 @author: laycocla
 """
 
-from ..freq_tab import joint_distribution
-from ..freq_tab import common_item_marginal
-from ..freq_tab import conditional_distribution
-from ..freq_tab import reweight_conditional_distribution
+from ..freq_tab.common_item_marginal import common_item_marginal
+from ..freq_tab.conditional_distribution import conditional_distribution
+from ..freq_tab.reweight_conditional_distribution import reweight_conditional_distribution
 
 
 import pandas as pd
 import numpy as np
 
-def fe(x, y, common_x, common_y, scores, w1):
+def fe(gx, gy, score_min, score_max, w1):
     """
   Perform Frequency Estimation equating.
 
   Parameters:
-  x, y: Array of raw scores for Form X and Form Y
-  common_x, common_y: Arrays of anchor scores for each form
-  scores: Array of score range to equate
+  gx : pandas.DataFrame
+        A joint distribution table for Form X and its common items, as produced by
+        `joint_distribution()`. Must include columns for the unique scores on X
+        and the corresponding frequencies.
+    
+    gy : pandas.DataFrame
+        A joint distribution table for Form Y and its common items, as produced by
+        `joint_distribution()`. Must include columns for the unique scores on Y
+        and the corresponding frequencies.
+        
+  scores: Array of full score range to equate
+  
   w1: Weight for group 1
 
-  Returns:
-  DataFrame of equated scores
-  """
-  #Define weights
+  Returns
+    -------
+    pandas.DataFrame
+        A score correspondence table with equivalent scores on Form X and Form Y,
+        derived via frequency estimation equating.
+
+    Notes
+    -----
+    This function assumes that the joint distributions `gx` and `gy` have already
+    been computed. To construct these objects, use:
+
+        gx = joint_distribution(df, form_col, common_col, ...)
+        gy = joint_distribution(df, form_col, common_col, ...)
+
+    where `df` is a data frame containing raw score data, `form_col` is the column name for total score, and `common_col` is the column name for the common (or anchor) items
+
+"""
+
+    #Define weights
     w2 = (1 - w1)
+    
+    #Define scores
+    scores = np.arange(score_min, score_max + 1)
+
   
   #First, get joint distributions for each population, marginal distributions, and a cumulative distribution
-    g1x_v = joint_distribution(x, common_x)
-    g1x_v = common_item_marginal(g1x_v)
+    g1x_v2 = common_item_marginal(gx)
   
-    g2y_v = joint_distribution(y, common_y)
-    g2y_v = common_item_marginal(g2y_v)
+    g2y_v2 = common_item_marginal(gy)
   
   #Then, make conditional distribution tables
-    cond_x = conditional_distribution(g1x_v)
-    cond_y = conditional_distribution(g2y_v)
+    cond_x = conditional_distribution(g1x_v2)
+    cond_y = conditional_distribution(g2y_v2)
   
   #Calculate the opposite distributions for the forms
   #i.e., distribution of Form Y in population 1
@@ -47,11 +72,11 @@ def fe(x, y, common_x, common_y, scores, w1):
     cond_y_pop1 = reweight_conditional_distribution(cond_y, other_marginals = cond_x.iloc[-1])
   
   #Calculate synthetic population values
-    f1x = g1x_v['Marginal']
+    f1x = gx['Marginal']
     f2x = cond_x_pop2.iloc[:-1]['Marginal']
 
     g1y = cond_y_pop1.iloc[:-1]['Marginal']
-    g2y = g2y_v['Marginal']
+    g2y = gy['Marginal']
 
   
   #Marginal synthetic distributions
@@ -75,10 +100,11 @@ def fe(x, y, common_x, common_y, scores, w1):
       idx = np.searchsorted(Gsy, Psx, side="left")
       return Y[idx] if idx < len(Y) else None
 
-    scores = scores + 1
+    scores = scores
+    
+    
     pdata = pd.DataFrame({
       'Score': scores, 
-      'Y': common_y, 
       'fsx': fsx.values, 
       'gsy': gsy.values, 
       'Fsx': Fsx.values, 
@@ -94,11 +120,11 @@ def fe(x, y, common_x, common_y, scores, w1):
     pdata['Gsy_star'] = pdata['Y_star_u'].apply(lambda y_star: Gsy[y_star] if pd.notna(y_star) else None)
   
   #Will also need a lag Y*u for equation
-    pdata['Gsy_star_lag'] = pdata['Y_star_u'].apply(lambda y_star: Gsy[y_star - 1] if pd.notna(y_star) and y_star > min(common_y) else None)
+    pdata['Gsy_star_lag'] = pdata['Y_star_u'].apply(lambda y_star: Gsy[y_star - 1] if pd.notna(y_star) and y_star > score_min else None)
 
   # Compute equated scores
     pdata['e_yx'] = ((((pdata['Psx'] / 100) - pdata['Gsy_star_lag']) / 
                     (pdata['Gsy_star'] - pdata['Gsy_star_lag'])) + 
                     (pdata['Y_star_u'] - 0.5))
 
-    return {'yx': pdata['e_yx']}
+    return pdata[['Score', 'e_yx']]

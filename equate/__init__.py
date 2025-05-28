@@ -5,11 +5,11 @@ Created on Thu May  1 12:53:43 2025
 @author: Laura
 """
 
-from .neat import neat
+
 from .methods.Tucker import Tucker
 from .methods.LevineOS import LevineOS
 from .methods.LevineTS import LevineTS
 from .methods.fe import fe
-#from .methods.BH import BH
+from .methods.bh import bh
 
-__all__ = ['neat', 'Tucker', 'LevineOS', 'LevineTS', 'fe']
+__all__ = ['Tucker', 'LevineOS', 'LevineTS', 'fe', 'bh']

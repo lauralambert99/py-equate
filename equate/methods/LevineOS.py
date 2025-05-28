@@ -4,6 +4,8 @@ Created on Thu May  1 08:05:02 2025
 
 @author: laycocla
 """
+#TODO: check with internal equating - calculation of gamma will be different! 
+
 
 import numpy as np
 import pandas as pd
