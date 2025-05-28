@@ -7,7 +7,7 @@ Created on Thu May  1 11:23:30 2025
 import numpy as np
 import pandas as pd
 import pytest
-from methods.Tucker import Tucker
+from equate.methods.Tucker import Tucker
 
 @pytest.fixture
 def mock_data():

@@ -8,8 +8,8 @@ Created on Wed Apr  2 14:00:57 2025
 from .methods.Tucker import Tucker
 from .methods.LevineOS import LevineOS
 from .methods.LevineTS import LevineTS
-#from methods.FE import FE
-#from methods.BH import BH
+from .methods.fe import fe
+from .methods.bh import bh
 
 import numpy as np
 import pandas as pd
@@ -25,8 +25,8 @@ def neat(x, y, common_x, common_y, score_min, score_max, w1, items = "internal",
     - w1: Weight for group 1 (0 < w1 < 1)
     - items: "internal" or "external" anchor design
     - method: NEAT equating method (options include "Tucker", "LevineOS" (Levine observed score), 
-                                    "LevineTS" (Levine true score), "FE" (frequency estimation), 
-                                    and "BH"(Braun-Holland))
+                                    "LevineTS" (Levine true score), "fe" (frequency estimation), 
+                                    and "bh"(Braun-Holland))
 
     Returns:
     - DataFrame of equated scores
@@ -39,7 +39,7 @@ def neat(x, y, common_x, common_y, score_min, score_max, w1, items = "internal",
         raise ValueError("w1 must be between 0 and 1")
         
     #Method validatation
-    valid_methods = ["Tucker", "LevineOS", "LevineTS", "FE", "BH"]
+    valid_methods = ["Tucker", "LevineOS", "LevineTS", "fe", "bh"]
     if method not in valid_methods:
        raise ValueError(f"Method '{method}' not supported. Choose from {valid_methods}")
         
@@ -55,11 +55,11 @@ def neat(x, y, common_x, common_y, score_min, score_max, w1, items = "internal",
     elif method == "LevineTS":
         return LevineTS(x, y, common_x, common_y, scores, w1)
 
-    #elif method == "FE":
-     #   return allthethings
+    elif method == "fe":
+        return fe(x, y, common_x, common_y, scores, w1)
 
-    #elif method == "BH":
-     #   return allthethings
+    elif method == "bh":
+        return bh(x, y, common_x, common_y, scores, w1)
 
     else:
         raise ValueError(f"Unsupported method: {method}")

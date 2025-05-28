@@ -9,7 +9,7 @@ from .neat import neat
 from .methods.Tucker import Tucker
 from .methods.LevineOS import LevineOS
 from .methods.LevineTS import LevineTS
-#from .methods.FE import FE
+from .methods.fe import fe
 #from .methods.BH import BH
 
-__all__ = ['neat', 'Tucker', 'LevineOS', 'LevineTS']
+__all__ = ['neat', 'Tucker', 'LevineOS', 'LevineTS', 'fe']

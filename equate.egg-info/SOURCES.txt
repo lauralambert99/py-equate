@@ -1,7 +1,9 @@
 README.md
 setup.py
 equate/__init__.py
+equate/chained.py
 equate/equipercen.py
+equate/freq_tab.py
 equate/mean_linear.py
 equate/neat.py
 equate.egg-info/PKG-INFO
@@ -9,10 +11,17 @@ equate.egg-info/SOURCES.txt
 equate.egg-info/dependency_links.txt
 equate.egg-info/requires.txt
 equate.egg-info/top_level.txt
+equate/freq_tab/__init__.py
+equate/freq_tab/common_item_marginal.py
+equate/freq_tab/conditional_distribution.py
+equate/freq_tab/joint_distribution.py
+equate/freq_tab/reweight_conditional_distribution.py
 equate/methods/LevineOS.py
 equate/methods/LevineTS.py
 equate/methods/Tucker.py
 equate/methods/__init__.py
+equate/methods/bh.py
+equate/methods/fe.py
 tests/__init__.py
 tests/test_BH.py
 tests/test_FE.py

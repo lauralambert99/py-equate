@@ -14,7 +14,7 @@ import numpy as np
 
 def equipercen(x, y, score_min, score_max):
     """
-    A function to create a frequency table for equating from two score vectors
+    A function to perform random groups equipercentile equating from two score vectors
     
     Parameters
     ----------
