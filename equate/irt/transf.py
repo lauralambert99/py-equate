@@ -42,15 +42,16 @@ def transf(aJ, bJ, cJ, aI, bI, items, common, method = "mean_mean"):
         'cI': cJ,
     })
     
-    #TODO: specify only do these things on common items!
+    #Specify only do these things on common items
+    common_data = data[data['Item'].isin(common)]
     
     if method == "mean_mean":
-        A = np.std(bJ)/np.std(bI)
-        B = np.mean(bJ) - A*np.mean(bI)
-    
+        A = np.std(common_data['bJ']) / np.std(common_data['bI'])
+        B = np.mean(common_data['bJ']) - A * np.mean(common_data['bI'])
+
     elif method == "mean_sigma":
-        A = np.mean(aI)/np.mean(aJ)
-        B = np.mean(bJ) - A*np.mean(bI)
+        A = np.mean(common_data['aI']) / np.mean(common_data['aJ'])
+        B = np.mean(common_data['bJ']) - A * np.mean(common_data['bI'])
     
     #elif method == "S_L":
         #do stuff iteratively using Gauss-Hermite quadrature to approximate the integral in the minimized function
@@ -65,8 +66,8 @@ def transf(aJ, bJ, cJ, aI, bI, items, common, method = "mean_mean"):
     #Brain is not braining: put form I onto form J to get form J equivalents.....WHICH ONE ARE WE CHANGING???
 
     
-    data['aJ_transf'] = aI/A
-    data['bJ_transf'] = A*bI + B
+    data['aJ_transf'] = data['aI'] / A
+    data['bJ_transf'] = A * data['bI'] + B
     
     thetaJ = A*thetaI + B
     
