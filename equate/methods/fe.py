@@ -28,7 +28,8 @@ def fe(gx, gy, score_min, score_max, w1):
         `joint_distribution()`. Must include columns for the unique scores on Y
         and the corresponding frequencies.
         
-  scores: Array of full score range to equate
+  score_min: minimum possible score
+  score_max: maximum possible score
   
   w1: Weight for group 1
 

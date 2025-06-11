@@ -4,7 +4,6 @@ Created on Thu May  1 08:05:02 2025
 
 @author: laycocla
 """
-#TODO: check with internal equating - calculation of gamma will be different! 
 
 
 import numpy as np
@@ -19,7 +18,7 @@ def LevineOS(x, y, common_x, common_y, scores, w1, anchor = "internal"):
   common_x, common_y: Arrays of anchor scores for each form
   scores: Array of score range to equate
   w1: Weight for group 1
-  anchor: If anchor items are internal or external.  Defaults to internal.
+  anchor: If anchor items are "internal" or "external".  Defaults to "internal".
 
   Returns:
   DataFrame of equated scores
