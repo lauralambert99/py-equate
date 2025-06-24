@@ -37,8 +37,9 @@ def LevineOS(x, y, common_x, common_y, scores, w1, anchor = "internal"):
         gamma_2 = np.var(y)/np.cov(y, common_y)
     
     elif anchor == "external":
-        gamma_1 = (np.var(x) + np.cov(x, common_x))/(np.var(common_x) + np.cov(x, common_x))
-        gamma_2 = (np.var(y) + np.cov(y, common_y))/(np.var(common_y) + np.cov(y, common_y))
+        gamma_1 = (x.var(ddof=1) + x.cov(common_x)) / (common_x.var(ddof=1) + x.cov(common_x))
+        gamma_2 = (y.var(ddof=1) + y.cov(common_y)) / (common_y.var(ddof=1) + y.cov(common_y))
+
     
     else:
         raise ValueError(f"Unsupported anchor selection: {anchor}")
