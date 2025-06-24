@@ -9,7 +9,7 @@ import numpy as np
 def mean_equate_se(formX, formY):
     """
     Compute the standard error of equating (SEE) for mean equating
-    in a random groups design using raw scores.
+    in a random groups design using raw scores and the Delta Method
 
     Parameters:
     - formX: array-like raw scores from Form X
