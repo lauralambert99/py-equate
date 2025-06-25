@@ -25,15 +25,15 @@ def Tucker(x, y, common_x, common_y, scores, w1):
     w2 = (1 - w1)
     
     #Calculate gamma
-    gamma_1 = common_x.cov(x/common_x.var())
-    gamma_2 = common_y.cov(y/common_y.var())
+    gamma_1 = common_x.cov(x)/common_x.var(ddof=1)
+    gamma_2 = common_y.cov(y)/common_y.var(ddof=1)
 
     #Synthetic population stuff
     mu_sx = np.mean(x) - w2*gamma_1*(np.mean(common_x) - np.mean(common_y))
     mu_sy = np.mean(y) + w1*gamma_2*(np.mean(common_x) - np.mean(common_y))
 
-    var_sx = (x.var() - w2*(gamma_1**2)*(common_x.var() - common_y.var()) + w1*w2*(gamma_1**2)*(np.mean(common_x) - np.mean(common_y))**2)
-    var_sy = (y.var() + w1*(gamma_2**2)*(common_x.var() - common_y.var()) + w1*w2*(gamma_2**2)*(np.mean(common_x) - np.mean(common_y))**2)
+    var_sx = (x.var(ddof=1) - w2*(gamma_1**2)*(common_x.var(ddof=1) - common_y.var(ddof=1)) + w1*w2*(gamma_1**2)*(np.mean(common_x) - np.mean(common_y))**2)
+    var_sy = (y.var(ddof=1) + w1*(gamma_2**2)*(common_x.var(ddof=1) - common_y.var(ddof=1)) + w1*w2*(gamma_2**2)*(np.mean(common_x) - np.mean(common_y))**2)
 
     #Get standard deviations
     sd_sx = np.sqrt(var_sx)
