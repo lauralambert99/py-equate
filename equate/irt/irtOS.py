@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 from scipy.stats import norm
 from scipy.signal import fftconvolve
-from py_irt.scoring import calculate_theta
+from ..equipercen import equipercen
 
 def irt_prob(theta, a, b, c, model='2pl'):
     """Return item probabilities at one theta point"""
@@ -20,6 +20,7 @@ def irt_prob(theta, a, b, c, model='2pl'):
     elif model == '3pl':
         return c + (1 - c) / (1 + np.exp(-z))
 
+#Lord - Wingersky stuff
 def score_distribution(params, theta_grid, weights, model='2pl'):
     score_max = params.shape[0]
     score_pmf = np.zeros(score_max + 1)
@@ -73,19 +74,26 @@ def irtOS(formX_params, formY_params, w1 = 0.5, model = '2pl', form = 'parameter
 
     f1_X = w1 * score_distribution(paramsX, theta, phi1, model) + w2 * score_distribution(paramsX, theta, phi2, model)
     f2_Y = w1 * score_distribution(paramsY, theta, phi1, model) + w2 * score_distribution(paramsY, theta, phi2, model)
+    
+    #Need score_min and score_max
+    score_min = 0
+    score_max = paramsX['item_id'].nunique()
 
-    def equate_scores(pmf_X, pmf_Y):
-        f1_X_cum = pmf_X.cumsum()
-        f2_Y_cum = pmf_Y.cumsum()
-        eq_table = []
+    #Have PMFs, need raw scores
+    #Can multiply by a big number to get?
 
-        for score_x, p in f1_X_cum.items():
-            score_y = np.searchsorted(f2_Y_cum.values, p)
-            eq_table.append((score_x, score_y))
+    def pmf_to_scores(pmf, scale=10000):
+        counts = (pmf.values * scale).round().astype(int)
+        scores = np.repeat(pmf.index.values, counts)
+        return scores
 
-        return pd.DataFrame(eq_table, columns=["X", "eyx"])
+    scores_x = pmf_to_scores(f1_X)
+    scores_y = pmf_to_scores(f2_Y)
+    
+    #Call equipercen function from before
+    eq_result = equipercen(scores_x, scores_y, score_min, score_max)
 
-    return equate_scores(f1_X, f2_Y)
+    return eq_result
 
 
 
