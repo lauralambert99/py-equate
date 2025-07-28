@@ -7,7 +7,7 @@ Created on Mon Jul  7 12:36:20 2025
 import numpy as np
 import pandas as pd
 
-def linear_equate_se(formX, formY, y_scores = None):
+def linear_se(formX, formY, y_scores = None):
     """
     Compute standard error of equating (SEE) for linear equating in a random groups design
     using the Delta method.
