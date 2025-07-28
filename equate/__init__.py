@@ -11,6 +11,14 @@ from .methods.LevineOS import LevineOS
 from .methods.LevineTS import LevineTS
 from .methods.fe import fe
 from .methods.bh import bh
+from .freq_tab.common_item_marginal import common_item_marginal
+from .freq_tab.conditional_distribution import conditional_distribution
+from .freq_tab.joint_distribution import joint_distribution
+from .freq_tab.reweight_conditional_distribution import reweight_conditional_distribution
 from .se_equating.mean_se import mean_equate_se
+from .se_equating.linear_se import linear_se
 
-__all__ = ['Tucker', 'LevineOS', 'LevineTS', 'fe', 'bh', 'mean_equate_se']
+
+__all__ = ['Tucker', 'LevineOS', 'LevineTS', 'fe', 'bh', 
+           'common_item_marginal', 'conditional_distribution', 'joint_distribution', 'reweight_conditional_distribution', 
+           'mean_equate_se', 'linear_se']
