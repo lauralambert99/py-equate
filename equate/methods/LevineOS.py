@@ -55,7 +55,7 @@ def LevineOS(x, y, common_x, common_y, scores, w1, anchor = "internal"):
     sd_sx = np.sqrt(var_sx)
     sd_sy = np.sqrt(var_sy)
     
-    ly_x = (sd_sx/sd_sy)*(scores - mu_sx) + mu_sy
+    ly_x = (sd_sy/sd_sx)*(scores - mu_sx) + mu_sy
 
     eyx = pd.DataFrame({'Scores': scores,
                        'ey': ly_x})
