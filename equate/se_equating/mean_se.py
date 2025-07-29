@@ -5,9 +5,8 @@ Created on Mon Jun 23 22:07:56 2025
 @author: Laura
 """
 import numpy as np
-import pandas as pd
 
-def mean_equate_se(formX, formY):
+def mean_se(formX, formY):
     """
     Compute the standard error of equating (SEE) for mean equating
     in a random groups design using raw scores and the Delta Method
@@ -29,5 +28,6 @@ def mean_equate_se(formX, formY):
     n_y = len(formY)
 
     se2 = var_x / n_x + var_y / n_y
+    
     return np.sqrt(se2)
 
