@@ -21,4 +21,4 @@ from .se_equating.linear_se import linear_se
 
 __all__ = ['Tucker', 'LevineOS', 'LevineTS', 'fe', 'bh', 
            'common_item_marginal', 'conditional_distribution', 'joint_distribution', 'reweight_conditional_distribution', 
-           'mean_equate_se', 'linear_se']
+           'mean_se', 'linear_se']
