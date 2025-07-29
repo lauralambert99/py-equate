@@ -15,7 +15,7 @@ from .freq_tab.common_item_marginal import common_item_marginal
 from .freq_tab.conditional_distribution import conditional_distribution
 from .freq_tab.joint_distribution import joint_distribution
 from .freq_tab.reweight_conditional_distribution import reweight_conditional_distribution
-from .se_equating.mean_se import mean_equate_se
+from .se_equating.mean_se import mean_se
 from .se_equating.linear_se import linear_se
 
 
