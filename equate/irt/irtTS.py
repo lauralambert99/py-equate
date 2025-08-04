@@ -19,7 +19,7 @@ def ts_curve(params, theta_grid, model='2pl'):
     ])
     return prob_matrix.sum(axis = 1)  # sum of probabilities across items
 
-def irtTS(paramsX, paramsY, score_range=None, model='2pl', theta_grid=None):
+def irtTS(formX_params, formY_params, score_range = None, model = '2pl', theta_grid = None):
     """
     Perform IRT True Score Equating.
     
@@ -37,8 +37,8 @@ def irtTS(paramsX, paramsY, score_range=None, model='2pl', theta_grid=None):
     if theta_grid is None:
         theta_grid = np.linspace(-4, 4, 501)
         
-    T_X = ts_curve(paramsX, theta_grid, model)
-    T_Y = ts_curve(paramsY, theta_grid, model)
+    T_X = ts_curve(formX_params, theta_grid, model)
+    T_Y = ts_curve(formY_params, theta_grid, model)
 
     #Interpolation functions
     theta_from_Tx = interp1d(T_X, theta_grid, bounds_error = False, fill_value = "extrapolate")
@@ -46,7 +46,7 @@ def irtTS(paramsX, paramsY, score_range=None, model='2pl', theta_grid=None):
 
     #Score range
     if score_range is None:
-        score_max = paramsX.shape[0]  # assumes one row per item
+        score_max = formX_params.shape[0]  # assumes one row per item
         score_range = np.arange(0, score_max + 1)
 
     #Do equating
