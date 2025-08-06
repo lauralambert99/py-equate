@@ -6,30 +6,57 @@ Created on Mon Aug  4 12:30:48 2025
 """
 import numpy as np
 import pandas as pd
-from scipy.signal import fftconvolve
+from numpy.polynomial.hermite import hermgauss
 
-#Used to make theta grid
-def irt_prob(theta, a, b, c, model='2pl'):
-    """Return item probabilities at one theta point"""
-    z = a * (theta - b)
-    if model == '1pl':
-        return 1 / (1 + np.exp(-z))
-    elif model == '2pl':
-        return 1 / (1 + np.exp(-z))
-    elif model == '3pl':
-        return c + (1 - c) / (1 + np.exp(-z))
+def lord_wingersky(theta, irt_functions):
+    n_items = len(irt_functions)
+    max_score = n_items
+    probs = np.zeros((n_items + 1,))
+    probs[0] = 1.0
 
-#Lord - Wingersky stuff
-def score_distribution(params, theta_grid, weights, model='2pl'):
-    score_max = params.shape[0]
-    score_pmf = np.zeros(score_max + 1)
+    for j in range(n_items):
+        p = irt_functions[j](theta)
+        probs[1:] = probs[1:] * (1 - p) + probs[:-1] * p
+        probs[0] *= (1 - p)
 
-    for i, theta in enumerate(theta_grid):
-        p_i = irt_prob(theta, params['a'].values, params['b'].values, params['c'].values, model)
-        dist_theta = np.array([1.0])
-        for p in p_i:
-            dist_theta = fftconvolve(dist_theta, [1 - p, p])[:len(dist_theta)+1] # recursion
-        score_pmf[:len(dist_theta)] += weights[i] * dist_theta
+    return probs
 
-    return pd.Series(score_pmf, index=np.arange(len(score_pmf)))
+def lord_wingersky_distribution(params, theta_grid, weights, model='3pl', D=1.7):
+    def get_fn(a, b, c):
+        return lambda t: c + (1 - c) / (1 + np.exp(-D * a * (t - b)))
 
+    if 'c' not in params.columns:
+        params['c'] = 0.0
+
+    a, b, c = params['a'].values, params['b'].values, params['c'].values
+    n_items = len(a)
+
+    irt_fns = [get_fn(a[i], b[i], c[i]) for i in range(n_items)]
+    score_matrix = np.array([lord_wingersky(t, irt_fns) for t in theta_grid])
+    pmf = np.dot(weights, score_matrix)
+
+    return pmf
+
+def gauss_hermite_normal(n_points):
+    nodes, weights = hermgauss(n_points)
+
+    theta = nodes * np.sqrt(2)
+    weights = weights / np.sqrt(np.pi)
+
+    #Weights need to sum to 1 
+    weights /= weights.sum()
+
+    return theta, weights
+
+def cdf_mapping(fx, fy):
+    Fx = np.cumsum(fx)
+    Gy = np.cumsum(fy)
+    y_scores = np.arange(len(fy))
+
+    def map_score(p):
+        return y_scores[np.searchsorted(Gy, p, side='left')]
+
+    X = np.arange(len(fx))
+    eyx = [map_score(p) for p in Fx]
+
+    return pd.DataFrame({'X': X, 'eyx': eyx})

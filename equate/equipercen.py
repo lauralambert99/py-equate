@@ -88,12 +88,25 @@ def equipercen(x, y, score_min, score_max):
     #Will also need a lag Y*u for equation
     pdata['Gy_star_lag'] = pdata['Y_star_u'].apply(lambda y_star: Gy[y_star - 1] if pd.notna(y_star) and y_star > score_min else None)
 
-    # Compute equated scores
-    pdata['e_yx'] = ((((pdata['Px'] / 100) - pdata['Gy_star_lag']) / 
-                      (pdata['Gy_star'] - pdata['Gy_star_lag'])) + 
-                      (pdata['Y_star_u'] - 0.5))
+    e_yx = []
+    for i, row in pdata.iterrows():
+        Ghi = row['Gy_star']
+        Glo = row['Gy_star_lag']
+        Px_ = row['Px'] / 100
+        Ystar = row['Y_star_u']
+        
+        if pd.isna(Ghi) or pd.isna(Glo) or Ghi == Glo:
+            # No interpolation possible, use midpoint Y*
+            e_yx.append(float(Ystar))
+        else:
+            interp = ((Px_ - Glo) / (Ghi - Glo)) + (Ystar - 0.5)
+            e_yx.append(float(interp))
+    
+    pdata['e_yx'] = e_yx
 
     return {'yx': pdata['e_yx']}
+
+
 
 
 #%%
