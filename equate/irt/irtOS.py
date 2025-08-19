@@ -37,26 +37,26 @@ def irtOS(formX_params, formY_params, theta_points=31, w1=0.5, model='2pl', form
     if form != 'parameters':
         raise ValueError("Only 'parameters' form is currently supported.")
 
-    # Ensure c column exists
+    #Ensure c column exists
     for df in [formX_params, formY_params]:
         if 'c' not in df.columns:
             df['c'] = 0.0
 
-    # 1. Generate theta grid and weights
+    #Generate theta grid and weights
     theta, weights = gauss_hermite_normal(theta_points)
     w2 = 1 - w1
 
-    # 2. Compute score distributions: rows = scores, cols = theta
+    #Compute score distributions: rows = scores, cols = theta
     px_theta = lord_wingersky_distribution(formX_params, theta, model=model)
     py_theta = lord_wingersky_distribution(formY_params, theta, model=model)
 
-    # 3. Compute marginal PMFs across raw scores
+    #Compute marginal PMFs across raw scores
     f1_X = w1 * np.dot(px_theta, weights) + w2 * np.dot(px_theta, weights)
     f2_Y = w1 * np.dot(py_theta, weights) + w2 * np.dot(py_theta, weights)
 
     scores = np.arange(len(f1_X))
 
-    # 4. Compute expected theta per raw score
+    #Compute expected theta per raw score
     theta_x = []
     for i, score in enumerate(scores):
         weighted_prob = px_theta[i, :] * weights
@@ -65,17 +65,18 @@ def irtOS(formX_params, formY_params, theta_points=31, w1=0.5, model='2pl', form
         else:
             theta_x.append(np.sum(theta * weighted_prob) / weighted_prob.sum())
 
-    # 5. Convert PMFs to synthetic raw score vectors
+    #Convert PMFs to synthetic raw score vectors
+    #Here's where some of the slight discrepancies may still remain
     def sample_scores_from_pmf(pmf, n_sample=n_sample):
         return np.random.choice(np.arange(len(pmf)), size=n_sample, p=pmf)
 
     x_vec = sample_scores_from_pmf(f1_X, n_sample)
     y_vec = sample_scores_from_pmf(f2_Y, n_sample)
 
-    # 6. Perform equipercentile equating
+    #Perform equipercentile equating
     eq_result = equipercen.equipercen(x_vec, y_vec, score_min=0, score_max=len(f1_X)-1)
 
-    # 7. Construct output DataFrame
+    #Construct output DataFrame
     out = pd.DataFrame({
         'Theta': theta_x,
         'Scale': scores,

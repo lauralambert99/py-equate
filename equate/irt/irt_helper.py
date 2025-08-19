@@ -72,13 +72,13 @@ def gauss_hermite_quadrature(n_points, D=1.7):
     weights : ndarray
         Corresponding weights, normalized to sum to 1.
     """
-    # Hermite nodes and weights
+    #Hermite nodes and weights
     nodes, weights = hermgauss(n_points)
     
-    # Scale nodes for standard normal
+    #Scale nodes for standard normal
     theta = nodes * np.sqrt(2) / D  # scale by 1/D to match R's theta grid
     
-    # Normalize weights
+    #Normalize weights
     weights = weights / np.sqrt(np.pi)
     weights /= weights.sum()
     
@@ -138,7 +138,7 @@ def ts_curve(params, theta_grid, model='2pl', D=1.7):
     Returns:
     - Array of expected true scores for each theta
     """
-    # Ensure c exists
+    #Ensure c exists
     if 'c' not in params.columns:
         params['c'] = 0.0
 
@@ -147,9 +147,9 @@ def ts_curve(params, theta_grid, model='2pl', D=1.7):
     c = params['c'].values
     n_items = len(a)
 
-    # Compute probability matrix: rows=theta, columns=items
+    #Compute probability matrix: rows=theta, columns=items
     prob_matrix = np.array([irt_prob(theta, a, b, c, model=model, D=D) for theta in theta_grid])
 
-    # True score = sum of expected correct probabilities per theta
+    #True score = sum of expected correct probabilities per theta
     T_theta = prob_matrix.sum(axis=1)
     return T_theta
