@@ -6,53 +6,80 @@ Created on Wed Jun 11 09:44:06 2025
 """
 import numpy as np
 import pandas as pd
+from .irt_helper import lord_wingersky_distribution, gauss_hermite_normal
+from .. import equipercen 
 
-from .irt_helper import lord_wingersky_distribution, gauss_hermite_normal, cdf_mapping
-
-
-def irtOS(formX_params, formY_params, theta_points=31, w1=0.5, model='2pl', form='parameters'):
+def irtOS(formX_params, formY_params, theta_points=31, w1=0.5, model='2pl', form='parameters', n_sample=10000):
     """
-    Perform IRT Observed Score Equating.
-
-    Parameters:
-    - formX_params: DataFrame with item parameters in columns ('item_id', 'a', 'b', 'c') for Form X
-    - formY_params: DataFrame with item parameters in columns ('item_id', 'a', 'b', 'c') for Form Y
-    - theta_points: Number of points for quadrature integration (default 31)
-    - w1: Weight for Population 1 (default 0.5)
-    - model: '1pl', '2pl', or '3pl'
-    - form: Must be 'parameters' for now
-
-    Returns:
-    - DataFrame with columns: 'X', 'eyx' (equated score)
+    Perform IRT Observed Score Equating using equipercentile equating.
+    
+    Parameters
+    ----------
+    formX_params : DataFrame
+        Item parameters for Form X ('item_id', 'a', 'b', 'c').
+    formY_params : DataFrame
+        Item parameters for Form Y ('item_id', 'a', 'b', 'c').
+    theta_points : int
+        Number of quadrature points.
+    w1 : float
+        Weight for population 1.
+    model : str
+        IRT model ('1pl', '2pl', '3pl').
+    form : str
+        Must be 'parameters'.
+    n_sample : int
+        Number of synthetic examinees to generate for equipercentile equating.
+    
+    Returns
+    -------
+    DataFrame with columns: 'Theta', 'Scale', 'Equated'
     """
     if form != 'parameters':
-        raise ValueError("Currently only 'parameters' form is supported.")
+        raise ValueError("Only 'parameters' form is currently supported.")
 
-    paramsX = formX_params.copy()
-    paramsY = formY_params.copy()
-
-    #Check for c (set to 0 if missing)
-    for df in [paramsX, paramsY]:
+    # Ensure c column exists
+    for df in [formX_params, formY_params]:
         if 'c' not in df.columns:
             df['c'] = 0.0
 
-    #Generate Gauss-Hermite nodes and weights
+    # 1. Generate theta grid and weights
     theta, weights = gauss_hermite_normal(theta_points)
-
-    #Calculate population-weighted score distributions
     w2 = 1 - w1
 
-    f1_X = w1 * lord_wingersky_distribution(paramsX, theta, weights, model) + \
-           w2 * lord_wingersky_distribution(paramsX, theta, weights, model)
+    # 2. Compute score distributions: rows = scores, cols = theta
+    px_theta = lord_wingersky_distribution(formX_params, theta, model=model)
+    py_theta = lord_wingersky_distribution(formY_params, theta, model=model)
 
-    f2_Y = w1 * lord_wingersky_distribution(paramsY, theta, weights, model) + \
-           w2 * lord_wingersky_distribution(paramsY, theta, weights, model)
-  
+    # 3. Compute marginal PMFs across raw scores
+    f1_X = w1 * np.dot(px_theta, weights) + w2 * np.dot(px_theta, weights)
+    f2_Y = w1 * np.dot(py_theta, weights) + w2 * np.dot(py_theta, weights)
 
-    #Perform equipercentile equating
-    cdf_map = cdf_mapping(f1_X, f2_Y)
+    scores = np.arange(len(f1_X))
 
-    return cdf_map
+    # 4. Compute expected theta per raw score
+    theta_x = []
+    for i, score in enumerate(scores):
+        weighted_prob = px_theta[i, :] * weights
+        if weighted_prob.sum() == 0:
+            theta_x.append(theta[0] if i == 0 else theta[-1])
+        else:
+            theta_x.append(np.sum(theta * weighted_prob) / weighted_prob.sum())
 
+    # 5. Convert PMFs to synthetic raw score vectors
+    def sample_scores_from_pmf(pmf, n_sample=n_sample):
+        return np.random.choice(np.arange(len(pmf)), size=n_sample, p=pmf)
 
+    x_vec = sample_scores_from_pmf(f1_X, n_sample)
+    y_vec = sample_scores_from_pmf(f2_Y, n_sample)
 
+    # 6. Perform equipercentile equating
+    eq_result = equipercen.equipercen(x_vec, y_vec, score_min=0, score_max=len(f1_X)-1)
+
+    # 7. Construct output DataFrame
+    out = pd.DataFrame({
+        'Theta': theta_x,
+        'Scale': scores,
+        'Equated': eq_result['yx']
+    })
+
+    return out

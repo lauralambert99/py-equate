@@ -18,6 +18,8 @@ equate/freq_tab/joint_distribution.py
 equate/freq_tab/reweight_conditional_distribution.py
 equate/irt/__init__.py
 equate/irt/irtOS.py
+equate/irt/irtTS.py
+equate/irt/irt_helper.py
 equate/irt/transf.py
 equate/methods/LevineOS.py
 equate/methods/LevineTS.py
@@ -34,3 +36,4 @@ tests/test_FE.py
 tests/test_LevineOS.py
 tests/test_LevineTS.py
 tests/test_Tucker.py
+tests/test_irtTS.py

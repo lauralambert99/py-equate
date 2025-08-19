@@ -109,11 +109,6 @@ def equipercen(x, y, score_min, score_max):
 
 
 
-#%%
-old = ADM2['x']
-new = ADM1['x']
 
-#Testing - works in this instance
-equipercen(old, new, 0, 50)
     
     

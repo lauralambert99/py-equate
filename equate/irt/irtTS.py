@@ -7,53 +7,56 @@ Created on Mon Aug  4 12:00:41 2025
 import numpy as np
 import pandas as pd
 from scipy.interpolate import interp1d
-from .irt_helper import irt_prob
+from .irt_helper import gauss_hermite_quadrature, ts_curve 
 
-#Future TODO:  Add theta_range, num_grid_points to fxn args
-
-#Compute true scores over theta grid
-def ts_curve(params, theta_grid, model='2pl'):
-    prob_matrix = np.array([
-        irt_prob(theta, params['a'].values, params['b'].values, params['c'].values, model)
-        for theta in theta_grid
-    ])
-    return prob_matrix.sum(axis = 1)  # sum of probabilities across items
-
-def irtTS(formX_params, formY_params, score_range = None, model = '2pl', theta_grid = None):
+def irtTS(formX_params, formY_params, score_range=None, model='2pl', theta_points=31):
     """
-    Perform IRT True Score Equating.
+    Perform IRT True Score Equating, aligned with irtOS theta grid.
     
     Parameters:
-    - paramsX: DataFrame with item parameters ('a', 'b', 'c') for Form X
-    - paramsY: DataFrame with item parameters ('a', 'b', 'c') for Form Y
-    - score_range: Optional iterable of observed score values on Form X (e.g., range(0, 41))
-                   If None, it's inferred from Form X item count
+    - formX_params: DataFrame with item parameters ('a', 'b', 'c') for Form X
+    - formY_params: DataFrame with item parameters ('a', 'b', 'c') for Form Y
+    - score_range: Iterable of observed score values on Form X (e.g., range(0, n_items+1))
+                   If None, inferred from Form X item count
     - model: IRT model ('1pl', '2pl', or '3pl')
-    - theta_grid: Optional custom grid (default: np.linspace(-4, 4, 501))
-
+    - theta_points: Number of points for Gauss-Hermite quadrature (default 31)
+    
     Returns:
-    - DataFrame with columns: 'X', 'tyx' (true score equated from Form X to Y)
+    - DataFrame with columns: 'X' (Form X score), 'Theta' (associated theta), 'tyx' (equated true score)
     """
-    if theta_grid is None:
-        theta_grid = np.linspace(-4, 4, 501)
-        
-    T_X = ts_curve(formX_params, theta_grid, model)
-    T_Y = ts_curve(formY_params, theta_grid, model)
+    # 1. Generate theta grid using Gauss-Hermite quadrature
+    theta, weights = gauss_hermite_quadrature(theta_points)
 
-    #Interpolation functions
-    theta_from_Tx = interp1d(T_X, theta_grid, bounds_error = False, fill_value = "extrapolate")
-    Ty_from_theta = interp1d(theta_grid, T_Y, bounds_error = False, fill_value = "extrapolate")
+    # 2. Compute expected true scores for each theta
+    T_X = ts_curve(formX_params, theta, model=model)
+    T_Y = ts_curve(formY_params, theta, model=model)
 
-    #Score range
+    # 3. Create interpolation functions
+    theta_from_Tx = interp1d(T_X, theta, bounds_error=False, fill_value="extrapolate")
+    Ty_from_theta = interp1d(theta, T_Y, bounds_error=False, fill_value="extrapolate")
+
+    # 4. Determine score range
     if score_range is None:
         score_max = formX_params.shape[0]  # assumes one row per item
         score_range = np.arange(0, score_max + 1)
 
-    #Do equating
+    # 5. Compute equated scores and associated thetas
     tyx = []
+    thetas = []
     for x in score_range:
-        theta = theta_from_Tx(x)
-        y = Ty_from_theta(theta)
-        tyx.append((x, y))
+        theta_x = theta_from_Tx(x)
+        y = Ty_from_theta(theta_x)
+        thetas.append(theta_x)
+        tyx.append(y)
 
-    return pd.DataFrame(tyx, columns=["X", "tyx"])
+    # 6. Build output DataFrame
+    out = pd.DataFrame({
+        "X": score_range,
+        "Theta": thetas,
+        "tyx": tyx
+    })
+
+    return out
+
+
+#Future TODO:  Add theta_range, num_grid_points to fxn args

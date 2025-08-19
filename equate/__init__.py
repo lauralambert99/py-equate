@@ -17,8 +17,9 @@ from .freq_tab.conditional_distribution import conditional_distribution
 from .freq_tab.joint_distribution import joint_distribution
 from .freq_tab.reweight_conditional_distribution import reweight_conditional_distribution
 
-from .transf import transf
-from .irtOS import irtOS
+from .irt.transf import transf
+from .irt.irtOS import irtOS
+from .irt.irtTS import irtTS
 
 from .se_equating.mean_se import mean_se
 from .se_equating.linear_se import linear_se
@@ -26,5 +27,5 @@ from .se_equating.linear_se import linear_se
 
 __all__ = ['Tucker', 'LevineOS', 'LevineTS', 'fe', 'bh', 
            'common_item_marginal', 'conditional_distribution', 'joint_distribution', 'reweight_conditional_distribution',
-           'transf', 'irtOS',
+           'transf', 'irtOS', 'irtTS',
            'mean_se', 'linear_se']
