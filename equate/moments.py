@@ -8,9 +8,9 @@ Created on Tue Aug 26 12:16:22 2025
 import pandas as pd
 from scipy.stats import skew, kurtosis
 
-def compute_moments(eq_df, score_col = 'score'):
+def moments(eq_df, score_col = 'score'):
     """
-    Compute moments (mean, SD, skew, kurtosis) for each equipercentile column.
+    Compute moments (mean, SD, skew, kurtosis) for each equated score column.
 
     Parameters
     ----------

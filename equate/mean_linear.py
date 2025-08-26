@@ -9,46 +9,6 @@ import pandas as pd
 import numpy as np
 import itertools
 
-
-def freqtab(data2, data1):
-    """
-    A function to create a frequency table for equating from two score vectors
-    
-    Parameters
-    ----------
-    data1: a vector or list of scores on the OLD form
-    data2: a vector or list of scores on the NEW form
-    
-    Returns: a frequency table
-    
-    Depends: pandas, itertools
-
-    """
-    #Make sure it's a dataframe
-    data = pd.DataFrame({'X': data2, 'Y': data1})
-     
-    #Get the range of each form
-    formx_range = range(int(data['X'].min()), int(data['X'].max()) + 1)  #Need the plus one because not inclusive
-    formy_range = range(int(data['Y'].min()), int(data['Y'].max()) + 1)  
-
-    #Create a grid of all different observed score combinations
-    all_combinations = pd.DataFrame(itertools.product(formx_range, formy_range), columns=['X', 'Y'])
-
-    #Get frequency counts
-    freq_table = data.groupby(['X', 'Y']).size().reset_index(name='count')
-
-    #Merge with all possible observed combinations, filling missing counts with 0
-    full_freq_table = all_combinations.merge(freq_table, on=['X', 'Y'], how='left').fillna(0)
-
-    #Make sure 'count' is integer
-    full_freq_table['count'] = full_freq_table['count'].astype(int)
-
-    #Rename columns to something understandable
-    full_freq_table.columns = ['X', 'Y', 'count']
-  
-    
-    return full_freq_table
-
 def linear(x, y, score_min, score_max, type="linear", rescale=False, group="Random"):
     """
     A function to perform mean and linear equating.

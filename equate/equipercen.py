@@ -114,6 +114,5 @@ def equipercen(x = None, y = None, score_min = None, score_max = None, presmooth
     return equated_df
     
     
-#%%
-equipercen(x = formx['x'], y = formy['x'], score_min = 0, score_max = 50, presmoothed_df = None, order = None)
+
     
