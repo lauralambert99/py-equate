@@ -7,108 +7,113 @@ Created on Fri Mar 14 09:07:55 2025
 """
 
 #Load in dependent packages
-import pandas as pd
 import numpy as np
-
+import pandas as pd
+from scipy.stats import skew, kurtosis
+from statsmodels.discrete.discrete_model import Poisson
+from statsmodels.tools import add_constant
 #%%
 
-def equipercen(x, y, score_min, score_max):
+def equipercen(x = None, y = None, score_min = None, score_max = None, presmoothed_df = None, order = None):
     """
     A function to perform random groups equipercentile equating from two score vectors
     
+    Can accept raw vectors x, y or presmoothed_dict from presmooth().
+    
     Parameters
     ----------
-    x: a vector or list of scores on the OLD form
-    y: a vector or list of scores on the NEW form
-    score_min: the minimum possible score
-    score_max: the maximum possible score
-    
-    Returns: a frequency table
-    
-    Depends: pandas, itertools
-    
-    TO-DO: Flexibility!
-    TO-DO: Pop out little embedded functions into their own things?
+    x : list or pd.Series
+        Scores on the OLD form.
+    y : list or pd.Series
+        Scores on the NEW form.
+    score_min : int
+        Minimum possible score.
+    score_max : int
+        Maximum possible score.
+    presmoothed_df : pd.DataFrame, optional
+        Presmoothed frequencies with columns ['form', 'score', 'smoothed_freq', 'order'].
+    order : int, optional
+        Which order of presmoothing to use (required if presmoothed_df is provided).
 
+    Returns
+    -------
+    equated_df : pd.DataFrame
+        Columns: 'score' and 'equated'.
+    moments_df : pd.DataFrame
+        Columns: 'mean', 'sd', 'skew', 'kurt'.
     """
-    #TODO: potential errors
-        #If missing values for certain cells, may run into issues
-        #What to do with missing values
-    #TODO: Testing function works as expected
+
+    def single_equip(xfreq, yfreq):
+        # Convert to probabilities
+        f_x = xfreq / xfreq.sum()
+        g_y = yfreq / yfreq.sum()
+
+        # Cumulative distributions
+        Fx = f_x.cumsum()
+        Gy = g_y.cumsum()
+        Px = 100 * (Fx.shift(1, fill_value=0) + f_x / 2)
+        Gy_100 = Gy * 100
+
+        # Helper function for upper Y* index
+        def find_Y_star(px_val, Gy_val, scores):
+            idx = np.searchsorted(Gy_val, px_val, side="left")
+            return scores[idx] if idx < len(scores) else scores[-1]
+
+        scores = np.arange(len(xfreq))
+        pdata = pd.DataFrame({
+            'Score': scores,
+            'f_x': f_x.values,
+            'g_y': g_y.values,
+            'Fx': Fx.values,
+            'Gy': Gy.values,
+            'Px': Px.values,
+            'Gy_100': Gy_100.values
+        })
+
+        pdata['Y_star_u'] = pdata['Px'].apply(lambda px: find_Y_star(px, pdata['Gy_100'], scores))
+        pdata['Gy_star'] = pdata['Y_star_u'].apply(lambda y_star: Gy[y_star] if pd.notna(y_star) else None)
+        pdata['Gy_star_lag'] = pdata['Y_star_u'].apply(lambda y_star: Gy[y_star-1] if pd.notna(y_star) and y_star > 0 else None)
+
+        # Interpolated equated scores
+        e_yx = []
+        for i, row in pdata.iterrows():
+            Ghi = row['Gy_star']
+            Glo = row['Gy_star_lag']
+            Px_ = row['Px'] / 100
+            Ystar = row['Y_star_u']
+
+            if pd.isna(Ghi) or pd.isna(Glo) or Ghi == Glo:
+                e_yx.append(float(Ystar))
+            else:
+                interp = ((Px_ - Glo) / (Ghi - Glo)) + (Ystar - 0.5)
+                e_yx.append(float(interp))
+
+        pdata['e_yx'] = e_yx
+
+        equated_df = pd.DataFrame({
+            'score': pdata['Score'],
+            'equated': pdata['e_yx']
+        })
+
+        return equated_df
+
+    #Prepare frequencies
+    if presmoothed_df is not None:
+        if order is None:
+            raise ValueError("Must specify 'order' when using presmoothed_df")
+        xfreq = presmoothed_df.query(f"form=='X' & order=={order}")['smoothed_freq']
+        yfreq = presmoothed_df.query(f"form=='Y' & order=={order}")['smoothed_freq']
+        xfreq.index = range(score_min, score_max + 1)
+        yfreq.index = range(score_min, score_max + 1)
+    else:
+        # Raw vectors -> frequency tables
+        xfreq = x.value_counts().reindex(range(score_min, score_max + 1), fill_value=0).sort_index()
+        yfreq = y.value_counts().reindex(range(score_min, score_max + 1), fill_value=0).sort_index()
+
+    equated_df = single_equip(xfreq, yfreq)
+    return equated_df
     
-    #Convert to series just in case?
-    x = pd.Series(x)
-    y = pd.Series(y)
     
-    #First, get values in a table
-    pfreq_x = x.value_counts().reindex(range(score_min, score_max + 1), fill_value=0).sort_index()
-    pfreq_y = y.value_counts().reindex(range(score_min, score_max + 1), fill_value=0).sort_index()
-
-    
-    #Calculate f(x) and g(y)
-    f_x = pfreq_x/pfreq_x.sum()
-    g_y = pfreq_y/pfreq_y.sum()
-    
-    #Calculate F(x) and G(y)
-    Fx = f_x.cumsum()
-    Gy = g_y.cumsum()
-
-    Px = 100*(Fx.shift(1, fill_value = 0) + f_x/2)
-    
-    #Make G(y) * 100 value column - easier to reference this
-    Gy_100 = Gy*100
-
-    #Make a function to take each P(x) value and find the smallest Gy_100 value that is => to it
-
-    #But what we really want is the corresponding Y value
-    #Edit above to give us that
-    def find_Y_star(Px, Gy, Y):
-      idx = np.searchsorted(Gy, Px, side="left")
-      return Y[idx] if idx < len(Y) else None
-
-    scores = np.arange(score_min, score_max + 1)
-    pdata = pd.DataFrame({
-        'Score': scores, 
-        'X': pfreq_x.values, 
-        'Y': pfreq_y.values, 
-        'f_x': f_x.values, 
-        'g_y': g_y.values, 
-        'Fx': Fx.values, 
-        'Gy': Gy.values,
-        'Px': Px.values,
-        'Gy_100': Gy_100.values
-    })
-
-    #Use the function to make a new column 
-    pdata['Y_star_u'] = pdata['Px'].apply(lambda Px: find_Y_star(Px, pdata['Gy_100'], pdata['Score']))
-
-    #Compute G(Y*u)
-    pdata['Gy_star'] = pdata['Y_star_u'].apply(lambda y_star: Gy[y_star] if pd.notna(y_star) else None)
-    
-    #Will also need a lag Y*u for equation
-    pdata['Gy_star_lag'] = pdata['Y_star_u'].apply(lambda y_star: Gy[y_star - 1] if pd.notna(y_star) and y_star > score_min else None)
-
-    e_yx = []
-    for i, row in pdata.iterrows():
-        Ghi = row['Gy_star']
-        Glo = row['Gy_star_lag']
-        Px_ = row['Px'] / 100
-        Ystar = row['Y_star_u']
-        
-        if pd.isna(Ghi) or pd.isna(Glo) or Ghi == Glo:
-            # No interpolation possible, use midpoint Y*
-            e_yx.append(float(Ystar))
-        else:
-            interp = ((Px_ - Glo) / (Ghi - Glo)) + (Ystar - 0.5)
-            e_yx.append(float(interp))
-    
-    pdata['e_yx'] = e_yx
-
-    return {'yx': pdata['e_yx']}
-
-
-
-
-
-    
+#%%
+equipercen(x = formx['x'], y = formy['x'], score_min = 0, score_max = 50, presmoothed_df = None, order = None)
     

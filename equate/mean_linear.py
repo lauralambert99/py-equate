@@ -8,45 +8,7 @@ Created on Fri Feb 21 10:54:01 2025
 import pandas as pd
 import numpy as np
 import itertools
-#%%
 
-#Get data
-ADM1 = pd.read_csv(r'C:\Users\Laura\OneDrive - James Madison University\Documents\A&M\Equating\Homework_1\form_y.csv')
-ADM2 = pd.read_csv(r'C:\Users\Laura\OneDrive - James Madison University\Documents\A&M\Equating\Homework_1\form_x.csv')
-
-#Vectors of columns
-form_x = ADM2['x']
-form_y = ADM1['x']
-
-#First, get in a table
-pfreq_x = ADM2['x'].value_counts().sort_index()
-pfreq_y = ADM1['x'].value_counts().sort_index()
-
-#Python likes it to be in a dictionary before matching up?
-#That's what the internet says, anyway.
-dict_x = pfreq_x.to_dict()
-dict_y = pfreq_y.to_dict()
-
-#Make a vector of scores
-#Remember python is a 0 index, and doesn't include the last number
-scores = np.arange(0, 51)
-
-#Make empty arrays
-array_x = np.zeros(len(scores), dtype = int)
-array_y = np.zeros(len(scores), dtype = int)
-
-#Fill the arrays
-for key, value in dict_x.items():
-  array_x[key] = value
-  
-for key, value in dict_y.items():
-  array_y[key] = value
-
-#Combine into a dataframe
-pdata = pd.DataFrame({'Score': scores, 'X': array_x, 'Y': array_y})
-
-
-#%%
 
 def freqtab(data2, data1):
     """
@@ -158,13 +120,5 @@ def linear(x, y, score_min, score_max, type="linear", rescale=False, group="Rand
     #Return equated scores as a dataframe
     return eq
 
-#%%
-#Testing
 
-
-#Test mean and linear equating using function
-lx = linear(ADM2['x'], ADM1['x'], 0, 50)
-print(lx)
-mx = linear(ADM2['x'], ADM1['x'], 0, 50, type = "mean")
-print(mx)
 
