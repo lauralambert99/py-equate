@@ -44,6 +44,9 @@ def equipercen(x = None, y = None, score_min = None, score_max = None, presmooth
     """
 
     def single_equip(xfreq, yfreq):
+        
+        scores = xfreq.index.to_numpy()
+        
         # Convert to probabilities
         f_x = xfreq / xfreq.sum()
         g_y = yfreq / yfreq.sum()
@@ -52,49 +55,28 @@ def equipercen(x = None, y = None, score_min = None, score_max = None, presmooth
         Fx = f_x.cumsum()
         Gy = g_y.cumsum()
         Px = 100 * (Fx.shift(1, fill_value=0) + f_x / 2)
-        Gy_100 = Gy * 100
+        Gy_100 = (Gy * 100).to_numpy()
 
         # Helper function for upper Y* index
-        def find_Y_star(px_val, Gy_val, scores):
+        def find_Y_star(px_val, Gy_val):
             idx = np.searchsorted(Gy_val, px_val, side="left")
-            return scores[idx] if idx < len(scores) else scores[-1]
+            return min(idx, len(Gy_val)-1)
 
-        scores = np.arange(len(xfreq))
-        pdata = pd.DataFrame({
-            'Score': scores,
-            'f_x': f_x.values,
-            'g_y': g_y.values,
-            'Fx': Fx.values,
-            'Gy': Gy.values,
-            'Px': Px.values,
-            'Gy_100': Gy_100.values
-        })
-
-        pdata['Y_star_u'] = pdata['Px'].apply(lambda px: find_Y_star(px, pdata['Gy_100'], scores))
-        pdata['Gy_star'] = pdata['Y_star_u'].apply(lambda y_star: Gy[y_star] if pd.notna(y_star) else None)
-        pdata['Gy_star_lag'] = pdata['Y_star_u'].apply(lambda y_star: Gy[y_star-1] if pd.notna(y_star) and y_star > 0 else None)
 
         # Interpolated equated scores
         e_yx = []
-        for i, row in pdata.iterrows():
-            Ghi = row['Gy_star']
-            Glo = row['Gy_star_lag']
-            Px_ = row['Px'] / 100
-            Ystar = row['Y_star_u']
-
-            if pd.isna(Ghi) or pd.isna(Glo) or Ghi == Glo:
-                e_yx.append(float(Ystar))
+        for px in Px.to_numpy():
+            k = find_Y_star(px, Gy_100)        # positional index in arrays
+            Ghi = Gy.iloc[k]                   # positional lookup
+            Glo = Gy.iloc[k-1] if k > 0 else 0.0
+            if (Ghi <= Glo) or np.isclose(Ghi, Glo):
+                yhat = scores[k].astype(float)
             else:
-                interp = ((Px_ - Glo) / (Ghi - Glo)) + (Ystar - 0.5)
-                e_yx.append(float(interp))
+                # Linear interpolation within the Y bin, with 0.5 continuity correction
+                yhat = (scores[k] - 0.5) + ((px/100.0 - Glo) / (Ghi - Glo))
+            e_yx.append(float(yhat))
 
-        pdata['e_yx'] = e_yx
-
-        equated_df = pd.DataFrame({
-            'score': pdata['Score'],
-            'equated': pdata['e_yx']
-        })
-
+        equated_df = pd.DataFrame({'score': scores, 'equated': e_yx})
         return equated_df
 
     #Prepare frequencies

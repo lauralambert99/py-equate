@@ -80,7 +80,7 @@ def irtOS(formX_params, formY_params, theta_points=31, w1=0.5, model='2pl', form
     out = pd.DataFrame({
         'Theta': theta_x,
         'Scale': scores,
-        'Equated': eq_result['yx']
+        'Equated': eq_result['equated']
     })
 
     return out
