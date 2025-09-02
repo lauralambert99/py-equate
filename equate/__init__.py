@@ -30,10 +30,11 @@ from .irt.irtTS import irtTS
 
 from .se_equating.mean_se import mean_se
 from .se_equating.linear_se import linear_se
+from .se_equating.equi_se import eq_see_asy
 
 
 __all__ = ['chained', 'equipercen', 'loop_equate', 'mean', 'linear', 'moments', 'presmooth',
            'Tucker', 'LevineOS', 'LevineTS', 'fe', 'bh', 
            'common_item_marginal', 'conditional_distribution', 'joint_distribution', 'reweight_conditional_distribution',
            'transf', 'irtOS', 'irtTS',
-           'mean_se', 'linear_se']
+           'mean_se', 'linear_se', 'eq_see_asy']
