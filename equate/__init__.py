@@ -8,7 +8,6 @@ Created on Thu May  1 12:53:43 2025
 from .chained import chained
 from .equipercen import equipercen
 from .loop_equate import loop_equate
-from .mean_linear import mean
 from .mean_linear import linear
 from .moments import moments
 from .presmooth import presmooth

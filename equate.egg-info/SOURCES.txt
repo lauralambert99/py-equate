@@ -4,8 +4,11 @@ equate/__init__.py
 equate/chained.py
 equate/equipercen.py
 equate/freq_tab.py
+equate/loop_equate.py
 equate/mean_linear.py
+equate/moments.py
 equate/neat.py
+equate/presmooth.py
 equate.egg-info/PKG-INFO
 equate.egg-info/SOURCES.txt
 equate.egg-info/dependency_links.txt
@@ -28,6 +31,7 @@ equate/methods/__init__.py
 equate/methods/bh.py
 equate/methods/fe.py
 equate/se_equating/__init__.py
+equate/se_equating/equi_se.py
 equate/se_equating/linear_se.py
 equate/se_equating/mean_se.py
 tests/__init__.py
