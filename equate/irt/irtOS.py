@@ -72,9 +72,12 @@ def irtOS(formX_params, formY_params, theta_points=31, w1=0.5, model='2pl', form
 
     x_vec = sample_scores_from_pmf(f1_X, n_sample)
     y_vec = sample_scores_from_pmf(f2_Y, n_sample)
+    
+    x_vec1 = pd.Series(x_vec)
+    y_vec1 = pd.Series(y_vec)
 
     #Perform equipercentile equating
-    eq_result = equipercen.equipercen(x_vec, y_vec, score_min=0, score_max=len(f1_X)-1)
+    eq_result = equipercen(x_vec1, y_vec1, score_min=0, score_max=len(f1_X)-1)
 
     #Construct output DataFrame
     out = pd.DataFrame({
