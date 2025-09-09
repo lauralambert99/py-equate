@@ -64,6 +64,7 @@ def bh(x, y, gx, gy, score_min, score_max, w1):
 
     g1y = cond_y_pop1.iloc[:-1]['Marginal']
     g2y = gy['Marginal']
+    
 
   
   #Marginal synthetic distributions
