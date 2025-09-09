@@ -43,7 +43,6 @@ def bh(x, y, gx, gy, score_min, score_max, w1):
   #Define scores
     scores = np.arange(score_min, score_max + 1)
 
-
 #First, get joint distributions for each population, marginal distributions, and a cumulative distribution
     g1x_v2 = common_item_marginal(gx)
 
@@ -75,22 +74,23 @@ def bh(x, y, gx, gy, score_min, score_max, w1):
     y = y.value_counts().reindex(scores, fill_value=0).sort_index()  
     
     #Calculate means and standard deviations
-    mu_sx = sum(x*fsx)  #Mean of synthetic population
-    var_sx = sum(((x-mu_sx)**2)*fsx)  #Variance of synthtic population
-    sd_sx = var_sx**0.5
-    
-    mu_sy = sum(y*gsy)  #Mean of synthetic population
-    var_sy = sum(((y-mu_sy)**2)*gsy)  #Variance of synthtic population
-    sd_sy = var_sy**0.5
-    
-    slope = sd_sy / sd_sx  #Ratio of standard deviations
-    
-    intercept = mu_sy - slope * mu_sx  
-    
+
+    mu_sx = (scores * fsx).sum()
+    var_sx = (((scores - mu_sx) ** 2) * fsx).sum()
+    sd_sx = var_sx ** 0.5
+
+    mu_sy = (scores * gsy).sum()
+    var_sy = (((scores - mu_sy) ** 2) * gsy).sum()
+    sd_sy = var_sy ** 0.5
+
+    if sd_sx == 0:
+        raise ValueError("sd_sx is zero (no spread in synthetic X). Cannot compute slope.")
+
+    slope = sd_sy / sd_sx
+    intercept = mu_sy - slope * mu_sx
+
     ex = slope * scores + intercept
-    
-    eq =  pd.DataFrame({'Score': scores,
-                        'ex': ex})
-    #Return equated scores as a dataframe
+
+    eq = pd.DataFrame({'Score': scores, 'ex': ex})
     return eq
-  
+    
