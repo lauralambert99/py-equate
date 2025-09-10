@@ -39,7 +39,7 @@ def bh(x, y, gx, gy, score_min, score_max, w1):
   """
   #Define weights
     w2 = (1 - w1)
-  
+
   #Define scores
     scores = np.arange(score_min, score_max + 1)
 
@@ -52,37 +52,46 @@ def bh(x, y, gx, gy, score_min, score_max, w1):
   #Then, make conditional distribution tables
     cond_x = conditional_distribution(g1x_v2)
     cond_y = conditional_distribution(g2y_v2)
+    
+    cond_x = cond_x.fillna(0)
+    cond_y = cond_y.fillna(0)
+
   
   #Calculate the opposite distributions for the forms
   #i.e., distribution of Form Y in population 1
-    cond_x_pop2 = reweight_conditional_distribution(cond_x, other_marginals = cond_y.iloc[-1])
-    cond_y_pop1 = reweight_conditional_distribution(cond_y, other_marginals = cond_x.iloc[-1])
-  
+    f2x = reweight_conditional_distribution(cond_x, other_marginals=g2y_v2.iloc[-1, :-2])
+    g1y = reweight_conditional_distribution(cond_y, other_marginals=g1x_v2.iloc[-1, :-2])
+    
   #Calculate synthetic population values
     f1x = gx['Marginal']
-    f2x = cond_x_pop2.iloc[:-1]['Marginal']
-
-    g1y = cond_y_pop1.iloc[:-1]['Marginal']
     g2y = gy['Marginal']
     
+    f2x['Marginal'] = f2x.iloc[:, :-2].sum(axis=1)
+    g1y['Marginal'] = g1y.iloc[:, :-2].sum(axis=1)
 
-  
-  #Marginal synthetic distributions
-    fsx = w1*f1x + w2*f2x
-    gsy = w1*g1y + w2*g2y
-    
-    x = x.value_counts().reindex(scores, fill_value=0).sort_index()
-    y = y.value_counts().reindex(scores, fill_value=0).sort_index()  
+    f2x_2 = f2x['Marginal'].iloc[:-1]
+    g1y_2 = g1y['Marginal'].iloc[:-1]
+
+    f1x = jointX['Marginal']
+    g2y = jointY['Marginal']
+
+    f2x_2 /= f2x_2.sum()
+    g1y_2 /= g1y_2.sum()
+
+    fsx = w1*f1x + w2*f2x_2
+    gsy = w1*g1y_2 + w2*g2y
     
     #Calculate means and standard deviations
-
+    
     mu_sx = (scores * fsx).sum()
-    var_sx = (((scores - mu_sx) ** 2) * fsx).sum()
-    sd_sx = var_sx ** 0.5
-
+    var_sx = ((scores - mu_sx)**2 * fsx).sum()
+    sd_sx = np.sqrt(var_sx)
+    
     mu_sy = (scores * gsy).sum()
-    var_sy = (((scores - mu_sy) ** 2) * gsy).sum()
-    sd_sy = var_sy ** 0.5
+    var_sy = ((scores - mu_sy)**2 * gsy).sum() 
+    sd_sy = np.sqrt(var_sy)
+    
+    print(sd_sx, sd_sy)
 
     if sd_sx == 0:
         raise ValueError("sd_sx is zero (no spread in synthetic X). Cannot compute slope.")

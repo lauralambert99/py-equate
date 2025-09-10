@@ -58,6 +58,7 @@ def eq_see_asy(freq_X, freq_Y):
             yhat = scores[k].astype(float)
         else:
             yhat = (scores[k] - 0.5) + ((px/100.0 - Glo) / (Ghi - Glo))
+            
         e_yx.append(float(yhat))
         
         #This is the SEE bit
@@ -78,6 +79,7 @@ def eq_see_asy(freq_X, freq_Y):
         'equated': e_yx,
         'SEE': sees
     })
+    
     return equated_df
     
     
