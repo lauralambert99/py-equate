@@ -82,8 +82,8 @@ def fe(gx, gy, score_min, score_max, w1):
     f2x_2 = f2x['Marginal'].iloc[:-1]
     g1y_2 = g1y['Marginal'].iloc[:-1]
 
-    f1x = jointX['Marginal']
-    g2y = jointY['Marginal']
+    f1x = gx['Marginal']
+    g2y = gy['Marginal']
 
     f2x_2 /= f2x_2.sum()
     g1y_2 /= g1y_2.sum()
