@@ -42,17 +42,17 @@ def transf(aJ, bJ, cJ, aI, bI, items, common, method = "mean_mean"):
         'cJ': cJ, 
         'aI': aI, 
         'bI': bI, 
-        'cI': cJ,
+        'cI': cJ,  #Look up if we need CI and CJ or not; eq. 6.5 in K&B shows cJ = cI
     })
     
     #Specify only do these things on common items
     common_data = data[data['Item'].isin(common)]
     
-    if method == "mean_mean":
+    if method == "mean_sigma":
         A = np.std(common_data['bJ']) / np.std(common_data['bI'])
         B = np.mean(common_data['bJ']) - A * np.mean(common_data['bI'])
 
-    elif method == "mean_sigma":
+    elif method == "mean_mean":
         A = np.mean(common_data['aI']) / np.mean(common_data['aJ'])
         B = np.mean(common_data['bJ']) - A * np.mean(common_data['bI'])
     
@@ -112,7 +112,7 @@ def transf(aJ, bJ, cJ, aI, bI, items, common, method = "mean_mean"):
     data['aJ_transf'] = data['aI'] / A
     data['bJ_transf'] = A * data['bI'] + B
     
-    thetaJ = A*thetaI + B #Don't have thetas yet
+    #thetaJ = A*thetaI + B #Don't have thetas yet
     
     return data
 

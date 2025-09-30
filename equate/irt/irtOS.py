@@ -6,7 +6,7 @@ Created on Wed Jun 11 09:44:06 2025
 """
 import numpy as np
 import pandas as pd
-from .irt_helper import lord_wingersky_distribution, gauss_hermite_normal
+from .irt_helper import lord_wingersky_distribution, gauss_hermite_quadrature
 from .. import equipercen 
 
 def irtOS(formX_params, formY_params, theta_points=31, w1=0.5, model='2pl', form='parameters', n_sample=10000):
@@ -43,7 +43,7 @@ def irtOS(formX_params, formY_params, theta_points=31, w1=0.5, model='2pl', form
             df['c'] = 0.0
 
     #Generate theta grid and weights
-    theta, weights = gauss_hermite_normal(theta_points)
+    theta, weights = gauss_hermite_quadrature(theta_points)
     w2 = 1 - w1
 
     #Compute score distributions: rows = scores, cols = theta

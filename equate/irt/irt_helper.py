@@ -58,13 +58,6 @@ def gauss_hermite_quadrature(n_points, D=1.7):
     """
     Generate Gauss-Hermite quadrature points and weights for normal distribution integration.
 
-    Parameters
-    ----------
-    n_points : int
-        Number of quadrature points.
-    D : float
-        Scaling constant for IRT (typically 1.7).
-
     Returns
     -------
     theta : ndarray
