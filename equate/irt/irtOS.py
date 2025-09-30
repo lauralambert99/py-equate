@@ -45,6 +45,8 @@ def irtOS(formX_params, formY_params, theta_points=31, w1=0.5, model='2pl', form
     #Generate theta grid and weights
     theta, weights = gauss_hermite_quadrature(theta_points)
     w2 = 1 - w1
+    
+    print(f"Theta range (n={theta_points}): {theta.min():.3f}, {theta.max():.3f}")
 
     #Compute score distributions: rows = scores, cols = theta
     px_theta = lord_wingersky_distribution(formX_params, theta, model=model)

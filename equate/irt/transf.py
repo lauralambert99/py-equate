@@ -12,8 +12,9 @@ from scipy.special import expit
 from scipy.stats import norm
 
 #TODO: I bet we can require a dataframe with specified columns to make this neater.
+#TODO: Report out what the A and B coefficients are
 
-def transf(aJ, bJ, cJ, aI, bI, items, common, method = "mean_mean"):
+def transf(aJ, bJ, cJ, aI, bI, cI, items, common, method = "mean_mean"):
     """
   Perform mean/mean scale transformation.
 
@@ -42,7 +43,7 @@ def transf(aJ, bJ, cJ, aI, bI, items, common, method = "mean_mean"):
         'cJ': cJ, 
         'aI': aI, 
         'bI': bI, 
-        'cI': cJ,  #Look up if we need CI and CJ or not; eq. 6.5 in K&B shows cJ = cI
+        'cI': cI,  
     })
     
     #Specify only do these things on common items
@@ -80,7 +81,7 @@ def transf(aJ, bJ, cJ, aI, bI, items, common, method = "mean_mean"):
        #Restrict to common items only
        aI = common_data['aI'].to_numpy()
        bI = common_data['bI'].to_numpy()
-       cJ = common_data['cI'].to_numpy()
+       cI = common_data['cI'].to_numpy()
 
        aJ = common_data['aJ'].to_numpy()
        bJ = common_data['bJ'].to_numpy()
@@ -114,5 +115,6 @@ def transf(aJ, bJ, cJ, aI, bI, items, common, method = "mean_mean"):
     
     #thetaJ = A*thetaI + B #Don't have thetas yet
     
+    print("A =",A, "B =",B)
     return data
 

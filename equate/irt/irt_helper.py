@@ -43,33 +43,22 @@ def lord_wingersky_distribution(params, theta_grid, model='3pl', D=1.7):
     return score_matrix.T  # shape = (n_scores, n_theta)
 
 
-def gauss_hermite_normal(n_points):
-    """
-    Returns Gauss-Hermite nodes and weights for normal distribution integration.
-    """
-    nodes, weights = hermgauss(n_points)
-    theta = nodes * np.sqrt(2)
-    weights = weights / np.sqrt(np.pi)
-    weights /= weights.sum()  # normalize
-    return theta, weights
-
-
-def gauss_hermite_quadrature(n_points, D=1.7):
+def gauss_hermite_quadrature(n_points):
     """
     Generate Gauss-Hermite quadrature points and weights for normal distribution integration.
 
     Returns
     -------
     theta : ndarray
-        Quadrature points (scaled by D).
+        Quadrature points.
     weights : ndarray
         Corresponding weights, normalized to sum to 1.
     """
     #Hermite nodes and weights
-    nodes, weights = hermgauss(n_points)
+    nodes, weights = np.polynomial.hermite.hermgauss(n_points)
     
     #Scale nodes for standard normal
-    theta = nodes * np.sqrt(2) / D  # scale by 1/D to match R's theta grid
+    theta = nodes * np.sqrt(2)  
     
     #Normalize weights
     weights = weights / np.sqrt(np.pi)
