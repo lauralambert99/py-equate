@@ -35,7 +35,7 @@ def presmooth(x, y, score_min, score_max, max_order = 10):
         for order in range(1, max_order + 1):
             #Construct matrix for log-linear Poisson regression
             scores = np.arange(score_min, score_max + 1)
-            X_design = np.vstack([scores**i for i in range(order + 1)]).T
+            X_design = np.vstack([scores**i for i in range(1, order + 1)]).T
             X_design = add_constant(X_design, has_constant='add')
             model = Poisson(freq_series.values, X_design)
             fit = model.fit(disp=0)

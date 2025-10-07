@@ -62,13 +62,13 @@ def eq_see_asy(freq_X, freq_Y):
         e_yx.append(float(yhat))
         
         #This is the SEE bit
-        Fx_val = Fx.iloc[i]
+        Fx_val = Px.iloc[i] / 100
         Fy_val = Gy.iloc[k]
         fY_val = g_y.iloc[k]
         
         if fY_val > 0:
-            var = (Fx_val*(1 - Fx_val))/(nX * fY_val**2) + \
-                  (Fy_val*(1 - Fy_val))/(nY * fY_val**2)
+            var = ((Fx_val*(1 - Fx_val))/(nX * (fY_val**2))) + \
+                  ((Fy_val*(1 - Fy_val))/(nY * (fY_val**2)))
             see = np.sqrt(var)
         else:
             see = np.nan #Can't divide by zero
