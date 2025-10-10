@@ -7,7 +7,7 @@ Created on Tue Aug 26 05:32:50 2025
 import numpy as np
 import pandas as pd
 
-def eq_see_asy(freq_X, freq_Y):
+def eq_see_asy(scores_x, freq_X, scores_y, freq_Y):
     """
     Calculate Standard Errors of Equating (SEE) for equipercentile equating
     using asymptotic SEE formula.
@@ -16,68 +16,112 @@ def eq_see_asy(freq_X, freq_Y):
     ----------
     freq_X : pd.Series
         Frequencies for scores on form X, indexed by score (ascending).
+        Must be the same length as scores_X.
     freq_Y : pd.Series
         Frequencies for scores on form Y, indexed by score (ascending).
+        Must be the same length as scores_Y.
+    scores_X : array-like
+        Unique score points for form X (i.e., possible score range)
+    scores_Y : array-like
+        Unique score points for form Y
         
     Returns
     -------
     pd.DataFrame with columns:
-        - score_X : score on form X
-        - equated_Y : equated score on form Y
+        - score : score on form X
+        - equated : equated score on form Y
         - SEE : standard error of equating
     """
 
-    scores = freq_X.index.to_numpy()
+    scores_x = np.array(scores_x, dtype=float)
+    freq_X = np.array(freq_X, dtype=float)
+    scores_y = np.array(scores_y, dtype=float)
+    freq_Y = np.array(freq_Y, dtype=float)
     
-    #Probabilities
-    f_x = freq_X / freq_X.sum()
-    g_y = freq_Y / freq_Y.sum()
-    
-    #Cumulative distributions
-    Fx = f_x.cumsum()
-    Gy = g_y.cumsum()
-    Px = 100 * (Fx.shift(1, fill_value=0) + f_x / 2)
-    Gy_100 = (Gy * 100).to_numpy()
+    #Make sure things are the same length
+    if len(scores_x) != len(freq_X):
+        raise ValueError(f"Length mismatch: scores_x ({len(scores_x)}) != freq_X ({len(freq_X)}).")
+    if len(scores_y) != len(freq_Y):
+        raise ValueError(f"Length mismatch: scores_y ({len(scores_y)}) != freq_Y ({len(freq_Y)}).")
     
     #Sample sizes
-    nX, nY = freq_X.sum(), freq_Y.sum()
+    nX = np.sum(freq_X) 
+    nY = np.sum(freq_Y)
+        
+    #Probabilities
+    f_x = freq_X / nX
+    g_y = freq_Y / nY
+    
+    #Cumulative distributions
+    Fx = np.cumsum(f_x)
+    Gy = np.cumsum(g_y)
+    
+    #Percentiles
+    Px = np.zeros(len(scores_x))
+    
+    for i in range(len(scores_x)):
+        if i == 0:
+            Px[i] = f_x[i] / 2.0
+        else:
+            Px[i] = Fx[i-1] + f_x[i] / 2.0
+    
+    Px = Px * 100
+    Gy_100 = Gy * 100
     
     def find_Y_star(px_val, Gy_val):
         idx = np.searchsorted(Gy_val, px_val, side="left")
         return min(idx, len(Gy_val)-1)
 
-    e_yx, sees = [], []
+    e_yx = []
     
     #This is the equating bit
-    for i, px in enumerate(Px.to_numpy()):
+    for i, px in enumerate(Px):
         k = find_Y_star(px, Gy_100)
-        Ghi = Gy.iloc[k]
-        Glo = Gy.iloc[k-1] if k > 0 else 0.0
+        Ghi = Gy[k]
+        Glo = Gy[k-1] if k > 0 else 0.0
         
         if (Ghi <= Glo) or np.isclose(Ghi, Glo):
-            yhat = scores[k].astype(float)
+            yhat = scores_y[k].astype(float)
         else:
-            yhat = (scores[k] - 0.5) + ((px/100.0 - Glo) / (Ghi - Glo))
+            yhat = (scores_y[k] - 0.5) + ((px/100.0 - Glo) / (Ghi - Glo))
             
         e_yx.append(float(yhat))
         
         #This is the SEE bit
-        Fx_val = Px.iloc[i] / 100
-        Fy_val = Gy.iloc[k]
-        fY_val = g_y.iloc[k]
+        se = np.zeros(len(scores_x))
         
-        if fY_val > 0:
-            var = ((Fx_val*(1 - Fx_val))/(nX * (fY_val**2))) + \
-                  ((Fy_val*(1 - Fy_val))/(nY * (fY_val**2)))
-            see = np.sqrt(var)
-        else:
-            see = np.nan #Can't divide by zero
-        sees.append(see)
+        for i in range(len(scores_x)):
+            px_val = Px[i] / 100.0
+            
+            #Find which Y scores bracket this percentile
+            k = np.searchsorted(Gy_100, Px[i], side="left")
+            k = min(k, len(Gy_100) - 1)
+            
+            #Cumulative probabilities
+            Ghi = Gy[k]  
+            Glo = Gy[k-1] if k > 0 else 0.0 
+            
+            #Density interval: G(y*) - G(y*-1)
+            g0 = Ghi - Glo
+            
+            #Don't divide by zero!
+            if g0 < 1e-10:
+                g0 = 1e-10
+            
+            #SE = sqrt((1-q)*q/(n_x*g0^2) + (1/(n_y*g0^2))*(gm - q^2 + ((q-gm)^2)/g0)) - this is how equate calculated it; used a density interval
+            #gm = Glo
+            
+            #Separate the terms to make math easier
+            term1 = (1 - px_val) * px_val / (nX * g0**2)
+            term2 = (1 / (nY * g0**2)) * (Glo - px_val**2 + ((px_val - Glo)**2) / g0)
+            var_eY = term1 + term2
+            
+            se[i] = np.sqrt(var_eY)
 
     equated_df = pd.DataFrame({
-        'score': scores,
+        'score': scores_x,
         'equated': e_yx,
-        'SEE': sees
+        'SEE': se
     })
     
     return equated_df
