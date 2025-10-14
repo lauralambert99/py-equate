@@ -90,7 +90,7 @@ def irtOS(formX_params, formY_params, theta_points=10, w1=0.5, model='2pl',
     #Now, equipercentile equating
     eYx = equipercen(f_hat, g_hat)
         
-    # Return results in R-compatible format
+    #Put everything together
     result = {
         'Scale': np.arange(len(f_hat)),
         'eYx': eYx,
