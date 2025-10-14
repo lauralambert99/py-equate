@@ -24,7 +24,7 @@ def lord_wingersky(theta, irt_functions):
 
     return probs
 
-def lord_wingersky_distribution(params, theta_grid, model='3pl', D=1.7):
+def lord_wingersky_distribution(params, theta_grid, model='2pl', D=1.7):
     """
     Returns a 2D array: rows = raw scores (0..n_items), columns = theta points.
     """
@@ -34,13 +34,21 @@ def lord_wingersky_distribution(params, theta_grid, model='3pl', D=1.7):
     a, b, c = params['a'].values, params['b'].values, params['c'].values
     n_items = len(a)
 
-    def get_fn(a, b, c):
-        return lambda t: c + (1 - c) / (1 + np.exp(-D * a * (t - b)))
+    def get_fn(a_i, b_i, c_i):
+        if model == '1pl':
+            return lambda t: c_i + (1 - c_i) / (1 + np.exp(-D * (t - b_i)))
+        elif model == '2pl':
+            return lambda t: c_i + (1 - c_i) / (1 + np.exp(-D * a_i * (t - b_i)))
+        elif model == '3pl':
+            return lambda t: c_i + (1 - c_i) / (1 + np.exp(-D * a_i * (t - b_i)))
+        else:
+            raise ValueError(f"Unknown model: {model}")
 
     irt_fns = [get_fn(a[i], b[i], c[i]) for i in range(n_items)]
 
-    score_matrix = np.array([lord_wingersky(t, irt_fns) for t in theta_grid])  # shape = (n_theta, n_scores)
-    return score_matrix.T  # shape = (n_scores, n_theta)
+    score_matrix = np.array([lord_wingersky(t, irt_fns) for t in theta_grid])
+    
+    return score_matrix.T 
 
 
 def gauss_hermite_quadrature(n_points):
