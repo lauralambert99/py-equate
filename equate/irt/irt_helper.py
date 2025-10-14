@@ -188,25 +188,23 @@ def equipercentile_irt(fx, fy):
     fx = np.array(fx)
     fy = np.array(fy)
     
-    # Ensure proper normalization
+    #Normalize
     fx = fx / fx.sum()
     fy = fy / fy.sum()
     
     n_x = len(fx)
     n_y = len(fy)
     
-    # Compute CDFs
+    #Compute CDFs
     Fx = np.cumsum(fx)
     Gy = np.cumsum(fy)
     
-    # Percentile ranks using midpoint method
-    # P(x) = F(x-1) + f(x)/2
     Px = np.zeros(n_x)
     Px[0] = fx[0] / 2.0
     for i in range(1, n_x):
         Px[i] = Fx[i-1] + fx[i] / 2.0
     
-    # Equipercentile equating: find y such that G(y) = F(x)
+    #Equipercentile equating: find y such that G(y) = F(x)
     eyx = np.zeros(n_x)
     
     for i in range(n_x):
@@ -218,25 +216,21 @@ def equipercentile_irt(fx, fy):
         elif px >= 1.0:
             eyx[i] = float(n_y - 1)
         else:
-            # Find upper index
             idx = np.searchsorted(Gy, px, side='left')
             
             if idx == 0:
-                # px is below first cumulative probability
+                #px is below first cumulative probability
                 eyx[i] = px / Gy[0] if Gy[0] > 0 else 0.0
             elif idx >= n_y:
-                # px is above last cumulative probability
+                #px is above last cumulative probability
                 eyx[i] = float(n_y - 1)
             else:
-                # Linear interpolation between scores
                 Glo = Gy[idx - 1] if idx > 0 else 0.0
                 Ghi = Gy[idx]
                 
                 if np.isclose(Ghi, Glo):
                     eyx[i] = float(idx)
                 else:
-                    # Interpolate: y = idx - 0.5 + (px - Glo)/(Ghi - Glo)
-                    # This matches the R implementation
                     eyx[i] = (idx - 0.5) + (px - Glo) / (Ghi - Glo)
     
     return eyx
