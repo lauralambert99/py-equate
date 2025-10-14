@@ -6,8 +6,8 @@ Created on Wed Jun 11 09:44:06 2025
 """
 import numpy as np
 import pandas as pd
-from .irt_helper import lord_wingersky_distribution, gauss_hermite_quadrature
-from .. import equipercen 
+from .irt_helper import lord_wingersky_distribution, gauss_quad_prob, equipercentile_irt
+
 
 def irtOS(formX_params, formY_params, theta_points=10, w1=0.5, model='2pl', 
           mu=0.0, sigma=1.0, D=1.7, A=1.0, B=0.0):
