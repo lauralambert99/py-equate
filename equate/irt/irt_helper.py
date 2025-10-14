@@ -52,6 +52,30 @@ def lord_wingersky_distribution(params, theta_grid, model='2pl', D=1.7):
     
     return score_matrix.T 
 
+def gauss_quad_prob(n, mu=0.0, sigma=1.0):
+    """
+    Generate Gaussian quadrature nodes and weights
+    
+    """
+    from scipy.special import roots_hermitenorm
+    
+    #Get roots and weights for probabilist's Hermite polynomials
+    x, w = roots_hermitenorm(n)
+    
+    #The nodes are already correct for standard normal integration
+    nodes = x
+    
+    #Weights need to be normalized for probability (integral = 1)
+    #The weights from roots_hermitenorm integrate exp(-x^2/2) over (-inf, inf)
+    #which equals sqrt(2*pi), so divide by that
+    weights = w / np.sqrt(2 * np.pi)
+    
+    #Scale to N(mu, sigma^2)
+    nodes = mu + sigma * nodes
+    
+    return nodes, weights
+
+
 
 def gauss_hermite_quadrature(n_points):
     """
@@ -145,3 +169,74 @@ def ts_curve(params, theta_grid, model='2pl', D=1.7):
     #True score = sum of expected correct probabilities per theta
     T_theta = prob_matrix.sum(axis=1)
     return T_theta
+
+def equipercentile_irt(fx, fy):
+    """
+    Equipercentile equating for IRT observed scores.
+    
+    Parameters
+    ----------
+    fx : array-like
+        PMF for Form X
+    fy : array-like
+        PMF for Form Y
+    
+    Returns
+    -------
+    array : Equated scores e_Y(x)
+    """
+    fx = np.array(fx)
+    fy = np.array(fy)
+    
+    # Ensure proper normalization
+    fx = fx / fx.sum()
+    fy = fy / fy.sum()
+    
+    n_x = len(fx)
+    n_y = len(fy)
+    
+    # Compute CDFs
+    Fx = np.cumsum(fx)
+    Gy = np.cumsum(fy)
+    
+    # Percentile ranks using midpoint method
+    # P(x) = F(x-1) + f(x)/2
+    Px = np.zeros(n_x)
+    Px[0] = fx[0] / 2.0
+    for i in range(1, n_x):
+        Px[i] = Fx[i-1] + fx[i] / 2.0
+    
+    # Equipercentile equating: find y such that G(y) = F(x)
+    eyx = np.zeros(n_x)
+    
+    for i in range(n_x):
+        px = Px[i]
+        
+        # Find where px falls in Gy
+        if px <= 0:
+            eyx[i] = 0.0
+        elif px >= 1.0:
+            eyx[i] = float(n_y - 1)
+        else:
+            # Find upper index
+            idx = np.searchsorted(Gy, px, side='left')
+            
+            if idx == 0:
+                # px is below first cumulative probability
+                eyx[i] = px / Gy[0] if Gy[0] > 0 else 0.0
+            elif idx >= n_y:
+                # px is above last cumulative probability
+                eyx[i] = float(n_y - 1)
+            else:
+                # Linear interpolation between scores
+                Glo = Gy[idx - 1] if idx > 0 else 0.0
+                Ghi = Gy[idx]
+                
+                if np.isclose(Ghi, Glo):
+                    eyx[i] = float(idx)
+                else:
+                    # Interpolate: y = idx - 0.5 + (px - Glo)/(Ghi - Glo)
+                    # This matches the R implementation
+                    eyx[i] = (idx - 0.5) + (px - Glo) / (Ghi - Glo)
+    
+    return eyx

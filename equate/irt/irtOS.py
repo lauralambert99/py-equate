@@ -62,7 +62,7 @@ def irtOS(formX_params, formY_params, theta_points=10, w1=0.5, model='2pl',
             df['c'] = 0.0
 
     #Generate theta quadrature points and weights
-    theta, weights = gauss_quad_prob(n_points, mu=mu, sigma=sigma)
+    theta, weights = gauss_quad_prob(theta_points, mu=mu, sigma=sigma)
     w2 = 1 - w1
     
     #Compute score distributions using Lord-Wingersky
@@ -77,6 +77,7 @@ def irtOS(formX_params, formY_params, theta_points=10, w1=0.5, model='2pl',
     else:
         n_items_x = len(formX_params)
         n_items_y = len(formY_params)
+        
 
     #Integrate over theta to get marginal PMFs
     #NEW
@@ -88,15 +89,15 @@ def irtOS(formX_params, formY_params, theta_points=10, w1=0.5, model='2pl',
     g_hat = g_hat / g_hat.sum()
 
     #Now, equipercentile equating
-    eYx = equipercen(f_hat, g_hat)
+    eyx = equipercentile_irt(f_hat, g_hat)
         
     #Put everything together
-    result = {
+    result = pd.DataFrame({
         'Scale': np.arange(len(f_hat)),
-        'eYx': eYx,
+        'eyx': eyx,
         'f_hat': f_hat,
         'g_hat': g_hat    
-    }
+    })
         
     return result
 
