@@ -19,9 +19,11 @@ def lord_wingersky(theta, irt_functions):
 
     for j in range(n_items):
         p = irt_functions[j](theta)
-        probs[1:] = probs[1:] * (1 - p) + probs[:-1] * p
-        probs[0] *= (1 - p)
-
+        new_probs = probs.copy()
+        for r in range(1, j + 2):
+            new_probs[r] = probs[r] * (1 - p) + probs[r-1] * p
+        new_probs[0] = probs[0] * (1 - p)
+        probs = new_probs
     return probs
 
 def lord_wingersky_distribution(params, theta_grid, model='2pl', D=1.7):
