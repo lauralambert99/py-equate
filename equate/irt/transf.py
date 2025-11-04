@@ -62,22 +62,6 @@ def transf(aJ, bJ, cJ, aI, bI, cI, items, common, method = "mean_mean"):
     
     elif method == "Haebara":
        #Haebara minimizes Hcrit = SUM[Hdiff(theta)]
-       #Need a minimization function - scipy has this
-       #Need a theta grid
-       def theta_grid(n_points = 61, theta_range = (-4, 4)): #Range seems standard
-           return np.linspace(theta_range[0], theta_range[1], n_points)
-       
-       #Also need a function for probability that 'examinees of a given ability will answer a particular item correctly'
-       def theta_prob(theta, a, b, c):
-            return c + (1 - c) * expit(a * (theta - b)) #Expit is a neater way to do 1/(1-e^-x) i.e. logistic sigmoid fxn
-       
-       #Next, sum function
-       def Haebara_sum(params, theta, aI, bI, cI, aJ, bJ, cJ): #We need the thetas....this comes from the theta grid above
-           A, B = params #Tells minimize function to minimize these
-           P_J = theta_prob(theta[:, None], aJ, bJ, cJ) #This makes a grid of all thetas
-           P_I = theta_prob((A * theta[:, None] + B), (aI/A), (A*bI + B), cJ)
-           return np.sum((P_I - P_J) ** 2) #Sum of the differences
-       
        #Restrict to common items only
        aI = common_data['aI'].to_numpy()
        bI = common_data['bI'].to_numpy()
@@ -87,21 +71,40 @@ def transf(aJ, bJ, cJ, aI, bI, cI, items, common, method = "mean_mean"):
        bJ = common_data['bJ'].to_numpy()
        cJ = common_data['cJ'].to_numpy()
        
-       #Have to make the thing to call the thing
-       theta = theta_grid()
+       #Need a theta grid
+       theta = np.linspace(-4, 4, 30)
        
-       #Put stuff together - need an output to minimize
-       h_sum = lambda p: Haebara_sum(p, theta, aI, bI, cJ, aJ, bJ, cJ)
+       #Also need a function for probability that 'examinees of a given ability will answer a particular item correctly'
+       def theta_prob(theta, a, b, c):
+            return c + (1 - c) * expit(a * (theta[:, None] - b)) #Expit is a neater way to do 1/(1-e^-x) i.e. logistic sigmoid fxn
        
-       #Now, minimize that sum
-       sum_min = minimize(h_sum, x0=[1.0, 0.0], method='L-BFGS-B', bounds=[(0.5, 2.0), (-3, 3)])
+       #Next, sum function
+       def Haebara_sum(params):
+           A, B = params #Tells minimize function to minimize these
+           
+           #Don't do anything to form J
+           P_J = theta_prob(theta, aJ, bJ, cJ) #This makes a grid of all thetas
+           
+           #Make changes to form I
+           a_transformed = aI/A
+           b_transformed = A * bI + B
+           
+           P_I = theta_prob(theta, a_transformed, b_transformed, cI)
+           
+           #Sum the things
+           return np.sum((P_I - P_J) ** 2) #Sum of the differences
        
-       #But, it might not
-       if not sum_min.success:
+       #Minimize Haebara
+       result = minimize(Haebara_sum,
+                         x0 = [1.0, 0.0],
+                         method = 'L-BFGS-B',
+                         bounds = [(0.1, 10.0), (-5.0, 5.0)])
+       
+       A, B = result.x
+       
+       #Message if it doesn't work
+       if not result.success:
            raise RuntimeError(f"Haebara minimization failed: {sum_min.message}")
-       
-       A = sum_min.x[0] 
-       B = sum_min.x[1]
    
     else:
         raise ValueError(f"Unsupported method: {method}")
