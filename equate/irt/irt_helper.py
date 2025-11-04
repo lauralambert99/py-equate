@@ -75,8 +75,6 @@ def gauss_quad_prob(n, mu=0.0, sigma=1.0):
     
     return nodes, weights
 
-
-
 def gauss_hermite_quadrature(n_points):
     """
     Generate Gauss-Hermite quadrature points and weights for normal distribution integration.

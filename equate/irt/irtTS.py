@@ -7,11 +7,11 @@ Created on Mon Aug  4 12:00:41 2025
 import numpy as np
 import pandas as pd
 from scipy.interpolate import interp1d
-from .irt_helper import gauss_hermite_quadrature, ts_curve 
+from .irt_helper import ts_curve 
 
-def irtTS(formX_params, formY_params, score_range=None, model='2pl', theta_points=31):
+def irtTS(formX_params, formY_params, score_range=None, model='2pl', theta_points=30, theta_min=-4, theta_max=4, D=1.7):
     """
-    Perform IRT True Score Equating, aligned with irtOS theta grid.
+    Perform IRT True Score Equating.
     
     Parameters:
     - formX_params: DataFrame with item parameters ('a', 'b', 'c') for Form X
@@ -19,28 +19,32 @@ def irtTS(formX_params, formY_params, score_range=None, model='2pl', theta_point
     - score_range: Iterable of observed score values on Form X (e.g., range(0, n_items+1))
                    If None, inferred from Form X item count
     - model: IRT model ('1pl', '2pl', or '3pl')
-    - theta_points: Number of points for Gauss-Hermite quadrature (default 31)
+    - theta_points: Number of points for theta grid (default 30)
+    - theta_min: Lower bound of theta in theta grid (default -4)
+    - theta_max: Upper bound of theta in theta grid (default 4)
     
     Returns:
     - DataFrame with columns: 'X' (Form X score), 'Theta' (associated theta), 'tyx' (equated true score)
     """
-    # 1. Generate theta grid using Gauss-Hermite quadrature
-    theta, weights = gauss_hermite_quadrature(theta_points)
+    #Generate theta grid using Gauss-Hermite quadrature
+    theta = np.linspace(theta_min, theta_max, theta_points)
 
-    # 2. Compute expected true scores for each theta
-    T_X = ts_curve(formX_params, theta, model=model)
-    T_Y = ts_curve(formY_params, theta, model=model)
+    #Compute expected true scores for each theta
+    T_X = ts_curve(formX_params, theta, model=model, D=D)
+    T_Y = ts_curve(formY_params, theta, model=model, D=D)
 
-    # 3. Create interpolation functions
-    theta_from_Tx = interp1d(T_X, theta, bounds_error=False, fill_value="extrapolate")
-    Ty_from_theta = interp1d(theta, T_Y, bounds_error=False, fill_value="extrapolate")
+    #Create interpolation functions
+    theta_from_Tx = interp1d(T_X, theta, kind='linear',
+                             bounds_error=False, fill_value="extrapolate")
+    Ty_from_theta = interp1d(theta, T_Y, kind='linear',
+                             bounds_error=False, fill_value="extrapolate")
 
-    # 4. Determine score range
+    #Determine score range
     if score_range is None:
         score_max = formX_params.shape[0]  # assumes one row per item
         score_range = np.arange(0, score_max + 1)
 
-    # 5. Compute equated scores and associated thetas
+    #Compute equated scores and associated thetas
     tyx = []
     thetas = []
     for x in score_range:
@@ -49,7 +53,7 @@ def irtTS(formX_params, formY_params, score_range=None, model='2pl', theta_point
         thetas.append(theta_x)
         tyx.append(y)
 
-    # 6. Build output DataFrame
+    #Build output DataFrame
     out = pd.DataFrame({
         "X": score_range,
         "Theta": thetas,
@@ -57,6 +61,3 @@ def irtTS(formX_params, formY_params, score_range=None, model='2pl', theta_point
     })
 
     return out
-
-
-#Future TODO:  Add theta_range, num_grid_points to fxn args
