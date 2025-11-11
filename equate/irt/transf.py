@@ -57,8 +57,58 @@ def transf(aJ, bJ, cJ, aI, bI, cI, items, common, method = "mean_mean"):
         A = np.mean(common_data['aI']) / np.mean(common_data['aJ'])
         B = np.mean(common_data['bJ']) - A * np.mean(common_data['bI'])
     
-    #elif method == "S_L":
-        #do stuff iteratively using Gauss-Hermite quadrature to approximate the integral in the minimized function
+    elif method == "S_L":
+        #Set parameters
+        aI = common_data['aI'].to_numpy()
+        bI = common_data['bI'].to_numpy()
+        cI = common_data['cI'].to_numpy()
+        
+        aJ = common_data['aJ'].to_numpy()
+        bJ = common_data['bJ'].to_numpy()
+        cJ = common_data['cJ'].to_numpy()
+        
+        #Need theta grid
+        theta = np.linspace(-4, 4, 30)
+        
+        #Create weights for integration
+        weights = np.ones(len(theta))
+        weights[0] = 0.5
+        weights[-1] = 0.5
+        weights = weights * (theta[1] - theta[0])  
+        
+        def irt_prob_3pl(theta, a, b, c):
+            """Compute 3PL probability"""
+            return c + (1 - c) * expit(a * (theta[:, None] - b))
+        
+        def stocking_lord_criterion(params):
+            """Stocking-Lord criterion: sum of squared differences of TCCs"""
+            A, B = params
+            
+            # Test characteristic curve for Form J (sum across items)
+            P_J = irt_prob_3pl(theta, aJ, bJ, cJ)
+            TCC_J = np.sum(P_J, axis=1)  #Sum over items for each theta
+            
+            #Test characteristic curve for Form I transformed to Form J scale
+            a_transformed = aI / A
+            b_transformed = A * bI + B
+            P_I = irt_prob_3pl(theta, a_transformed, b_transformed, cI)
+            TCC_I = np.sum(P_I, axis=1)  # Sum over items for each theta
+            
+            #Weighted sum of squared differences
+            return np.sum(weights * (TCC_I - TCC_J) ** 2)
+        
+        #Minimize Stocking-Lord criterion
+        result = minimize(
+            stocking_lord_criterion, 
+            x0=[1.0, 0.0], 
+            method='L-BFGS-B', 
+            bounds=[(0.1, 10.0), (-5.0, 5.0)]
+        )
+        
+        if not result.success:
+            raise RuntimeError(f"Stocking-Lord minimization failed: {result.message}")
+        
+        A, B = result.x
     
     elif method == "Haebara":
        #Haebara minimizes Hcrit = SUM[Hdiff(theta)]
@@ -110,9 +160,6 @@ def transf(aJ, bJ, cJ, aI, bI, cI, items, common, method = "mean_mean"):
         raise ValueError(f"Unsupported method: {method}")
   
     #To do rescaling:
-    #Brain is not braining: put form I onto form J to get form J equivalents.....WHICH ONE ARE WE CHANGING???
-
-    
     data['aJ_transf'] = data['aI'] / A
     data['bJ_transf'] = A * data['bI'] + B
     
