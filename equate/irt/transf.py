@@ -68,9 +68,11 @@ def transf(aJ, bJ, cJ, aI, bI, cI, items, common, method = "mean_mean"):
         cJ = common_data['cJ'].to_numpy()
         
         #Need theta grid
+        #In future: make these params?
         theta = np.linspace(-4, 4, 30)
         
         #Create weights for integration
+        #In future: make this a param?
         weights = np.ones(len(theta))
         weights[0] = 0.5
         weights[-1] = 0.5
@@ -92,7 +94,7 @@ def transf(aJ, bJ, cJ, aI, bI, cI, items, common, method = "mean_mean"):
             a_transformed = aI / A
             b_transformed = A * bI + B
             P_I = irt_prob_3pl(theta, a_transformed, b_transformed, cI)
-            TCC_I = np.sum(P_I, axis=1)  # Sum over items for each theta
+            TCC_I = np.sum(P_I, axis=1)  #Sum over items for each theta
             
             #Weighted sum of squared differences
             return np.sum(weights * (TCC_I - TCC_J) ** 2)
