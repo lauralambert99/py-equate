@@ -156,7 +156,7 @@ def transf(aJ, bJ, cJ, aI, bI, cI, items, common, method = "mean_mean"):
        
        #Message if it doesn't work
        if not result.success:
-           raise RuntimeError(f"Haebara minimization failed: {sum_min.message}")
+           raise RuntimeError(f"Haebara minimization failed: {result.message}")
    
     else:
         raise ValueError(f"Unsupported method: {method}")
