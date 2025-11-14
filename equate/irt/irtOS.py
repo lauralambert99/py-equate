@@ -36,7 +36,7 @@ def irtOS(formX_params, formY_params, theta_points=10, w1=0.5, model='2pl',
         Scale linking parameter (default = 1.0)
     B : float
         Scale linking parameter (default = 0.0)
-    
+    NOTE: If using original parameters, provide A and B.  If using transformed parameters, do not provide A or B.
     Returns
     -------
     DataFrame with columns: 
@@ -45,17 +45,10 @@ def irtOS(formX_params, formY_params, theta_points=10, w1=0.5, model='2pl',
         - 'f_hat' : Form X PMF
         - 'g_hat' : Form Y PMF
     """
-    #First, transformation
-    if A != 1.0 or B != 0.0:
-        if isinstance(formY_params, dict):
-            formY_params = formY_params.copy()
-            formY_params['b'] = [A * b + B for b in formY_params['b']]
-            formY_params['a'] = [a / A for a in formY_params['a']]
-        else:
-            formY_params = formY_params.copy()
-            formY_params['b'] = A * formY_params['b'] + B
-            formY_params['a'] = formY_params['a'] / A
-            
+    formX_params = formX_params.copy()
+    formY_params = formY_params.copy()
+    
+              
     #Ensure c column exists
     for df in [formX_params, formY_params]:
         if 'c' not in df.columns:
@@ -68,7 +61,12 @@ def irtOS(formX_params, formY_params, theta_points=10, w1=0.5, model='2pl',
     #Compute score distributions using Lord-Wingersky
     #Want rows = scores, cols = theta
     px_theta = lord_wingersky_distribution(formX_params, theta, model=model, D=D)
-    py_theta = lord_wingersky_distribution(formY_params, theta, model=model, D=D)
+    
+    theta_transformed = A * theta + B
+    
+    # Compute score distribution for Form Y using TRANSFORMED theta
+    py_theta = lord_wingersky_distribution(formY_params, theta_transformed, model=model, D=D)
+    
 
     #Use params to get number of items on each form
     if isinstance(formX_params, dict):
@@ -100,4 +98,3 @@ def irtOS(formX_params, formY_params, theta_points=10, w1=0.5, model='2pl',
     })
         
     return result
-

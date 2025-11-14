@@ -80,7 +80,7 @@ def transf(aJ, bJ, cJ, aI, bI, cI, items, common, method = "mean_mean"):
         
         def irt_prob_3pl(theta, a, b, c):
             """Compute 3PL probability"""
-            return c + (1 - c) * expit(a * (theta[:, None] - b))
+            return c + (1 - c) * expit(1.7 * a * (theta[:, None] - b))
         
         def stocking_lord_criterion(params):
             """Stocking-Lord criterion: sum of squared differences of TCCs"""
@@ -128,7 +128,7 @@ def transf(aJ, bJ, cJ, aI, bI, cI, items, common, method = "mean_mean"):
        
        #Also need a function for probability that 'examinees of a given ability will answer a particular item correctly'
        def theta_prob(theta, a, b, c):
-            return c + (1 - c) * expit(a * (theta[:, None] - b)) #Expit is a neater way to do 1/(1-e^-x) i.e. logistic sigmoid fxn
+            return c + (1 - c) * expit(1.7 * a * (theta[:, None] - b)) #Expit is a neater way to do 1/(1-e^-x) i.e. logistic sigmoid fxn
        
        #Next, sum function
        def Haebara_sum(params):
