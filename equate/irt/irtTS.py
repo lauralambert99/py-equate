@@ -30,36 +30,42 @@ def irtTS(formX_params, formY_params, score_range=None, model='2pl', theta_point
     Returns:
     - DataFrame with columns: 'X' (Form X score), 'Theta' (associated theta), 'tyx' (equated true score)
     """
-    #First, transformation
-    if A != 1.0 or B != 0.0:
-        if isinstance(formY_params, dict):
-            formY_params = formY_params.copy()
-            formY_params['b'] = [A * b + B for b in formY_params['b']]
-            formY_params['a'] = [a / A for a in formY_params['a']]
-        else:
-            formY_params = formY_params.copy()
-            formY_params['b'] = A * formY_params['b'] + B
-            formY_params['a'] = formY_params['a'] / A
+    #Make copies of params
+    formX_params = formX_params.copy()
+    formY_params = formY_params.copy()
     
-    #Generate theta grid using Gauss-Hermite quadrature
+    #Ensure c column exists
+    if 'c' not in formX_params.columns:
+        formX_params['c'] = 0.0
+    if 'c' not in formY_params.columns:
+        formY_params['c'] = 0.0
+    
+    #Make theta grid
     theta = np.linspace(theta_min, theta_max, theta_points)
-
-    #Compute expected true scores for each theta
+    
+    #Compute true score curve for Form X at original theta
     T_X = ts_curve(formX_params, theta, model=model, D=D)
-    T_Y = ts_curve(formY_params, theta, model=model, D=D)
+    
+    #Transform theta for Form Y
+    theta_transformed = A * theta + B
+    
+    #Compute true score curve for Form Y at transformed theta
+    T_Y = ts_curve(formY_params, theta_transformed, model=model, D=D)
 
     #Create interpolation functions
+    #Map from Form X true score to theta
     theta_from_Tx = interp1d(T_X, theta, kind='linear',
                              bounds_error=False, fill_value="extrapolate")
+    #Map from theta to Form Y true score
     Ty_from_theta = interp1d(theta, T_Y, kind='linear',
                              bounds_error=False, fill_value="extrapolate")
-
+    
     #Determine score range
     if score_range is None:
-        score_max = formX_params.shape[0]  # assumes one row per item
+        score_max = formX_params.shape[0]
         score_range = np.arange(0, score_max + 1)
-
-    #Compute equated scores and associated thetas
+    
+    #Get equated scores and thetas
     tyx = []
     thetas = []
     for x in score_range:
@@ -67,12 +73,12 @@ def irtTS(formX_params, formY_params, score_range=None, model='2pl', theta_point
         y = Ty_from_theta(theta_x)
         thetas.append(theta_x)
         tyx.append(y)
-
-    #Build output DataFrame
+    
+    #Put in DataFrame
     out = pd.DataFrame({
         "X": score_range,
         "Theta": thetas,
         "tyx": tyx
     })
-
+    
     return out
