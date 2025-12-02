@@ -11,7 +11,7 @@ from .irt_helper import ts_curve
 
 def irtTS(formX_params, formY_params, score_range=None, model='2pl', D=1.7, A=1.0, B=0.0):
     """
-    Perform IRT True Score Equating using root finding (matching SNSequate).
+    Perform IRT True Score Equating
     
     This function transforms Form X parameters to the Form Y scale, NOT vice versa.
     This matches the R implementation in SNSequate::irt.eq
