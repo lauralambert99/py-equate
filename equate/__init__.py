@@ -10,7 +10,7 @@ from .equipercen import equipercen
 from .loop_equate import loop_equate
 from .mean_linear import linear
 from .moments import moments
-from .presmooth import presmooth
+#from .presmooth import presmooth
 
 from .methods.Tucker import Tucker
 from .methods.LevineOS import LevineOS
@@ -32,7 +32,7 @@ from .se_equating.linear_se import linear_se
 from .se_equating.equi_se import eq_see_asy
 
 
-__all__ = ['chained', 'equipercen', 'loop_equate', 'mean', 'linear', 'moments', 'presmooth',
+__all__ = ['chained', 'equipercen', 'loop_equate', 'mean', 'linear', 'moments',
            'Tucker', 'LevineOS', 'LevineTS', 'fe', 'bh', 
            'common_item_marginal', 'conditional_distribution', 'joint_distribution', 'reweight_conditional_distribution',
            'transf', 'irtOS', 'irtTS',

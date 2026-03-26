@@ -9,7 +9,7 @@ import pandas as pd
 from scipy.stats import norm
 from numpy.polynomial.hermite import hermgauss
 
-def lord_wingersky(theta, irt_functions):
+def lord_wingersky(theta, irt_functions): #
     """
     Compute the distribution of raw scores for a single theta using Lord-Wingersky recursion.
     """
@@ -26,7 +26,7 @@ def lord_wingersky(theta, irt_functions):
         probs = new_probs
     return probs
 
-def lord_wingersky_distribution(params, theta_grid, model='2pl', D=1.7):
+def lord_wingersky_distribution(params, theta_grid, model='2pl', D=1.7): #
     """
     Returns a 2D array: rows = raw scores (0..n_items), columns = theta points.
     """
@@ -52,7 +52,7 @@ def lord_wingersky_distribution(params, theta_grid, model='2pl', D=1.7):
     
     return score_matrix.T 
 
-def gauss_quad_prob(n, mu=0.0, sigma=1.0):
+def gauss_quad_prob(n, mu=0.0, sigma=1.0): #
     """
     Generate Gaussian quadrature nodes and weights
     
@@ -111,15 +111,15 @@ def cdf_mapping(fx, fy, scores_x=None, scores_y=None):
     eyx = np.interp(Fx, Gy, scores_y)  # linear interpolation
     return pd.DataFrame({'X': scores_x, 'eyx': eyx})
 
-def irt_prob(theta, a, b, c=None, model='2pl', D=1.7):
+def irt_prob(theta, a, b, c=None, model='2pl', D=1.7): #
     """
     Compute probability of a correct response for given theta and item parameters.
 
     Parameters:
     - theta: scalar or array of ability values
-    - a: discrimination parameter(s)
-    - b: difficulty parameter(s)
-    - c: guessing parameter(s), optional (default 0)
+    - a: discrimination parameter
+    - b: difficulty parameter
+    - c: guessing parameter, optional (default 0)
     - model: '1pl', '2pl', or '3pl'
 
     Returns:
@@ -139,7 +139,7 @@ def irt_prob(theta, a, b, c=None, model='2pl', D=1.7):
     return P
 
 
-def ts_curve(params, theta_grid, model='2pl', D=1.7):
+def ts_curve(params, theta_grid, model='2pl', D=1.7): #
     """
     Compute expected true scores for a given item parameter set across a theta grid.
     
@@ -168,7 +168,7 @@ def ts_curve(params, theta_grid, model='2pl', D=1.7):
     T_theta = prob_matrix.sum(axis=1)
     return T_theta
 
-def equipercentile_irt(fx, fy):
+def equipercentile_irt(fx, fy): #
     """
     Equipercentile equating for IRT observed scores.
     

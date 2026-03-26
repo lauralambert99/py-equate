@@ -23,14 +23,14 @@ def common_item_marginal(joint_probs: pd.DataFrame, exclude_last_n: int = 2) -> 
     Returns:
     - Modified DataFrame with a new marginal row added.
     """
-    # Identify which columns to include in the marginal
+    #Identify which columns to include in the marginal
     include_cols = joint_probs.columns[:-exclude_last_n] if exclude_last_n > 0 else joint_probs.columns
     marginal_row = joint_probs[include_cols].sum(axis = 0)
 
-    # Fill the excluded columns with NaNs to maintain shape
+    #Fill the excluded columns with NaNs to maintain shape
     for col in joint_probs.columns[-exclude_last_n:]:
         marginal_row[col] = pd.NA
 
-    # Append the marginal row with a label
+    #Append the marginal row with a label
     marginal_row.name = "Marginal_Common"
     return pd.concat([joint_probs, pd.DataFrame([marginal_row])])

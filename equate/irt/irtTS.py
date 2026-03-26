@@ -13,8 +13,7 @@ def irtTS(formX_params, formY_params, score_range=None, model='2pl', D=1.7, A=1.
     """
     Perform IRT True Score Equating
     
-    This function transforms Form X parameters to the Form Y scale, NOT vice versa.
-    This matches the R implementation in SNSequate::irt.eq
+    This function transforms Form X parameters to the Form Y scale.
     
     Parameters:
     - formX_params: DataFrame with item parameters ('a', 'b', 'c') for Form X

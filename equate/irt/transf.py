@@ -12,7 +12,6 @@ from scipy.special import expit
 from scipy.stats import norm
 
 #TODO: I bet we can require a dataframe with specified columns to make this neater.
-#TODO: Report out what the A and B coefficients are
 
 def transf(aJ, bJ, cJ, aI, bI, cI, items, common, method = "mean_mean"):
     """
@@ -164,8 +163,6 @@ def transf(aJ, bJ, cJ, aI, bI, cI, items, common, method = "mean_mean"):
     #To do rescaling:
     data['aJ_transf'] = data['aI'] / A
     data['bJ_transf'] = A * data['bI'] + B
-    
-    #thetaJ = A*thetaI + B #Don't have thetas yet
     
     print("A =",A, "B =",B)
     return data

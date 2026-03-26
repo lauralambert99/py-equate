@@ -58,21 +58,21 @@ def fe(gx, gy, score_min, score_max, w1):
     scores = np.arange(score_min, score_max + 1)
 
   
-  #First, get joint distributions for each population, marginal distributions, and a cumulative distribution
+    #First, get joint distributions for each population, marginal distributions, and a cumulative distribution
     g1x_v2 = common_item_marginal(gx)
   
     g2y_v2 = common_item_marginal(gy)
   
-  #Then, make conditional distribution tables
+    #Then, make conditional distribution tables
     cond_x = conditional_distribution(g1x_v2)
     cond_y = conditional_distribution(g2y_v2)
   
-  #Calculate the opposite distributions for the forms
-  #i.e., distribution of Form Y in population 1
+    #Calculate the opposite distributions for the forms
+    #i.e., distribution of Form Y in population 1
     f2x = reweight_conditional_distribution(cond_x, other_marginals=g2y_v2.iloc[-1, :-2])
     g1y = reweight_conditional_distribution(cond_y, other_marginals=g1x_v2.iloc[-1, :-2])
     
-  #Calculate synthetic population values
+    #Calculate synthetic population values
     f1x = gx['Marginal']
     g2y = gy['Marginal']
     
@@ -89,22 +89,22 @@ def fe(gx, gy, score_min, score_max, w1):
     g1y_2 /= g1y_2.sum()
 
   
-  #Marginal synthetic distributions
+    #Marginal synthetic distributions
     fsx = w1*f1x + w2*f2x_2
     gsy = w1*g1y_2 + w2*g2y
   
-  #Cumulative synthetic distributions
+    #Cumulative synthetic distributions
     Fsx = fsx.cumsum()
     Gsy = gsy.cumsum()
   
     Psx = 100*(Fsx.shift(1, fill_value = 0) + fsx/2)
   
-  #Make G(y) * 100 value column - easier to reference this
+    #Make G(y) * 100 value column - easier to reference this
     Gsy_100 = Gsy*100
 
-  #Make a function to take each P(x) value and find the smallest Gy_100 value that is => to it
+    #Make a function to take each P(x) value and find the smallest Gy_100 value that is => to it
 
-  #But what we really want is the corresponding Y value
+    #But what we really want is the corresponding Y value
 
     def find_Y_star(Psx, Gsy, Y):
       idx = np.searchsorted(Gsy, Psx, side="left")
@@ -123,16 +123,16 @@ def fe(gx, gy, score_min, score_max, w1):
       'Gsy_100': Gsy_100.values
   })
 
-  #Use the function to make a new column 
+    #Use the function to make a new column 
     pdata['Y_star_u'] = pdata['Psx'].apply(lambda Psx: find_Y_star(Psx, pdata['Gsy_100'], pdata['Score']))
 
-  #Compute G(Y*u)
+    #Compute G(Y*u)
     pdata['Gsy_star'] = pdata['Y_star_u'].apply(lambda y_star: Gsy[y_star] if pd.notna(y_star) else None)
   
-  #Will also need a lag Y*u for equation
+    #Will also need a lag Y*u for equation
     pdata['Gsy_star_lag'] = pdata['Y_star_u'].apply(lambda y_star: Gsy[y_star - 1] if pd.notna(y_star) and y_star > score_min else None)
 
-  # Compute equated scores
+    #Compute equated scores
     pdata['e_yx'] = ((((pdata['Psx'] / 100) - pdata['Gsy_star_lag']) / 
                     (pdata['Gsy_star'] - pdata['Gsy_star_lag'])) + 
                     (pdata['Y_star_u'] - 0.5))

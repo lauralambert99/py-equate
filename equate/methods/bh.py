@@ -37,19 +37,19 @@ def bh(x, y, gx, gy, score_min, score_max, w1):
   Returns:
   DataFrame of equated scores
   """
-  #Define weights
+    #Define weights
     w2 = (1 - w1)
 
-  #Define scores
+    #Define scores
     scores = np.arange(score_min, score_max + 1)
 
-#First, get joint distributions for each population, marginal distributions, and a cumulative distribution
+    #First, get joint distributions for each population, marginal distributions, and a cumulative distribution
     g1x_v2 = common_item_marginal(gx)
 
     g2y_v2 = common_item_marginal(gy)
 
   
-  #Then, make conditional distribution tables
+    #Then, make conditional distribution tables
     cond_x = conditional_distribution(g1x_v2)
     cond_y = conditional_distribution(g2y_v2)
     
@@ -57,12 +57,12 @@ def bh(x, y, gx, gy, score_min, score_max, w1):
     cond_y = cond_y.fillna(0)
 
   
-  #Calculate the opposite distributions for the forms
-  #i.e., distribution of Form Y in population 1
+    #Calculate the opposite distributions for the forms
+    #i.e., distribution of Form Y in population 1
     f2x = reweight_conditional_distribution(cond_x, other_marginals=g2y_v2.iloc[-1, :-2])
     g1y = reweight_conditional_distribution(cond_y, other_marginals=g1x_v2.iloc[-1, :-2])
     
-  #Calculate synthetic population values
+    #Calculate synthetic population values
     f1x = gx['Marginal']
     g2y = gy['Marginal']
     
