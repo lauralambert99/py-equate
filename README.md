@@ -2,6 +2,8 @@
 
 pyequate is an open-source package containing different test score equating methods in one location.  It includes methods for random groups, common-item/non-equivalent groups, and IRT equating.  The version on GitHub will be the most current, with updates pushed to pyPI.
 
+A User Guide is available [here](https://lauralambert99.github.io/pyequate_user_guide/Random_Groups.html).
+
 ## Areas Currently Under Development
 
 - Standard errors of equating for common-item/non-equivalent groups methods
@@ -23,7 +25,9 @@ ACTmath
   
 ADMneatX and ADMneatY
 
-
+  - Contains item-level scores from 2000 examinees on the verbal subscale of an admissions test (Gonzales and Wiberg, 2017)
+  - First 40 columns: anchor items
+  - Remaining 80 columns: items unique to each form
 
 CBdatax1y2 and CBdatax2y1
 
