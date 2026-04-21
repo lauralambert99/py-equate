@@ -176,6 +176,39 @@ def _aovtab(
     return pd.DataFrame(rows).set_index("Model")
 
 # ---------------------------------------------------------------------------
+# Model selection option
+# ---------------------------------------------------------------------------
+
+def _glmselect(
+    atab: pd.DataFrame,
+    choosemethod: Literal["chi", "aic", "bic"] = "aic",
+    chip: float = 0.05,) -> str:
+    """
+    Select the best model from deviance table.
+
+    Parameters
+    ----------
+    atab         : output of _aovtab().
+    choosemethod : "chi" uses the chi-squared p-value threshold `chip`;
+                   "aic" / "bic" pick the model minimising AIC / BIC.
+    chip         : significance threshold for chi-squared selection.
+
+    Returns
+    -------
+    name of the selected model (index label in atab).
+    """
+    if choosemethod == "chi":
+        #Last model whose improvement is significant at level chip
+        sig = atab.index[atab["Pr(>Chi)"].fillna(1) < chip].tolist()
+        return sig[-1] if sig else atab.index[0]
+    elif choosemethod == "aic":
+        return atab["AIC"].idxmin() #Smallest AIC
+    elif choosemethod == "bic":
+        return atab["BIC"].idxmin() #Smallest BIC
+    else:
+        raise ValueError(f"Unknown choosemethod: {choosemethod!r}")
+        
+# ---------------------------------------------------------------------------
 # Overall function
 # ---------------------------------------------------------------------------
 def presmooth(
@@ -195,44 +228,149 @@ def presmooth(
 
     Parameters
     ----------
-    freq : array-like
-        Observed frequencies for a test, indexed by score.
-    score_min : int
-        Minimum possible score.
-    score_max : int
-        Maximum possible score.
-    max_order : int, optional
-        Maximum polynomial degree to try (default 10).
+    freq: Observed score frequencies (length = score_max - score_min + 1,
+                 or a Series/dict indexed by score).
+    score_min: Minimum possible score.
+    score_max: Maximum possible score.
+    degrees: Max polynomial degree.  Pass a list with one integer for the
+                 univariate case.  Defaults to `[4]`.
+    scorefun: Optional pre-built design matrix (DataFrame, one row per score,
+                 no intercept column).  If supplied, `degrees` is ignored.
+    stepup: If True, fit models of degree 1, 2, …, [degrees] and return all
+                 fitted frequencies as a DataFrame (one column per model).
+                 Defaults to True when `compare` or `choose` is True.
+    compare: If True, return the ANOVA/AIC/BIC comparison table instead
+                 of fitted frequencies.
+    choose: If True, run `compare` and additionally select the best model;
+                 return the smoothed frequencies for that model only.
+    choosemethod: Criterion for `choose`: "chi", "aic", or "bic".
+    chip: p-value threshold used when `choosemethod="chi"`.
+    verbose: If True, return the raw statsmodels GLM result object(s).
 
     Returns
     -------
-    presmooth_df : pd.DataFrame
-        Columns: ['score', 'observed', 'Order_1', 'Order_2', ..., 'Order_N']
-        Each Order_N column contains the smoothed frequencies for that
-        polynomial order.
+    Default (stepup = False, compare = False, choose = False, verbose = False):
+        pd.Series — smoothed frequencies, indexed by score.
+
+    stepup = True (and not compare/choose/verbose):
+        pd.DataFrame — one column per model ("Degree 1", …, "Degree N"),
+        indexed by score.
+
+    compare = True (and choose = False):
+        pd.DataFrame — ANOVA/AIC/BIC table.
+
+    choose = True:
+        dict with keys:
+            "fitted" → pd.Series of smoothed frequencies for chosen model,
+            "anova" → ANOVA table,
+            "model" → name of chosen model.
+
+    verbose = True:
+        Single GLMResultsWrapper or dict of them (stepup=True).
     """
-    score_range = range(score_min, score_max + 1)
-    freq = pd.Series(freq).reindex(score_range, fill_value=0)
-    scores = np.arange(score_min, score_max + 1, dtype=float)
-    counts = freq.values.astype(float)
+    if degrees is None:
+        degrees = [4]
+
+    if choose:
+        compare = True
+        
+    if stepup is None:
+        stepup = compare
+        
+    # ------------------------------------------------------------------
+    # First: Build score vector and observed counts
+    # ------------------------------------------------------------------
+    score_range = np.arange(score_min, score_max + 1, dtype = float)
+    n_scores = len(score_range)
+
+    freq_series = pd.Series(freq)
+    if not freq_series.index.equals(pd.RangeIndex(n_scores)):
+        #If freq is indexed by score values, reindex 
+        #Otherwise assume it is ordered from score_min to score_max.
+        freq_series = freq_series.reindex(score_range, fill_value = 0) #Don't eliminate scores with zero counts
+    counts = freq_series.values.astype(float)
     
-    #Scale scores first - avoid crazy matrices
-    score_mean = scores.mean()
-    score_sd   = scores.std(ddof=1)
-    scores_scaled = (scores - score_mean) / score_sd
+    # ------------------------------------------------------------------
+    # Second: Build design matrix
+    # ------------------------------------------------------------------
+    if scorefun is not None:
+        sf_df = scorefun.copy().reset_index(drop = True)
+        if len(sf_df) != n_scores:
+            raise ValueError(
+                "'scorefun' must contain the same number of rows as 'freq'"
+            )
+        if stepup or compare:
+            #Treat each column as one additional model term
+            models_idx = list(range(1, len(sf_df.columns) + 1))
+            mnames = [f"Term {i}" for i in models_idx]
+        else:
+            models_idx = None
+            mnames = None
+    else:
+        sf_df, models_idx, mnames = _build_scorefun(
+            score_range, degrees, stepup, compare
+        )
 
-    result_df = pd.DataFrame({
-        "score": scores.astype(int),
-        "observed": counts,
-    })
+    if (stepup or compare) and sf_df.shape[1] < 2:
+        raise ValueError(
+            f"Cannot run multiple models with only {sf_df.shape[1]} model term(s). "
+            "Increase `degrees` or provide a wider `scorefun`."
+        )
+    
+    # ------------------------------------------------------------------
+    # Third: Fit model(s)
+    # ------------------------------------------------------------------
+    if stepup or compare:
+        #One nested model per unique step value
+        unique_steps = sorted(set(models_idx))
+        col_names = list(sf_df.columns)
 
-    for order in range(1, max_order + 1):
-        #Design matrix: intercept + scores^1 + ... + scores^order
-        poly_terms = np.vstack([scores_scaled**i for i in range(1, order + 1)]).T
-        intercept = np.ones((len(scores), 1))
-        X_design = np.hstack([intercept, poly_terms])
+        glm_results: dict[str, sm.GLMResultsWrapper] = {}
+        for step in unique_steps:
+            # Include all columns assigned to steps <= current step
+            keep_cols = [c for c, m in zip(col_names, models_idx) if m <= step]
+            glm_results[mnames[step - 1]] = _fit_glm(sf_df[keep_cols], counts)
+    else:
+        glm_results = {"model": _fit_glm(sf_df, counts)}
+    
+    # ------------------------------------------------------------------
+    # Fourth: Return requested things
+    # ------------------------------------------------------------------
+    scores_int = score_range.astype(int)
 
-        params, _ = _fit_poisson_loglinear(X_design, counts)
-        result_df[f"Order_{order}"] = np.exp(X_design @ params)
+    #If verbose: return raw GLM object(s)
+    if verbose:
+        if stepup or compare:
+            return glm_results
+        return glm_results["model"]
 
-    return result_df
+    #If compare without choose: return ANOVA table
+    if compare and not choose:
+        return _aovtab(glm_results, counts)
+
+    #If choose: run model selection, return smoothed freq + metadata
+    if choose:
+        atab = _aovtab(glm_results, counts)
+        best = _glmselect(atab, choosemethod, chip)
+        fitted = pd.Series(
+            glm_results[best].fittedvalues,
+            index=scores_int,
+            name="smoothed",
+        )
+        return {"fitted": fitted, "anova": atab, "model": best}
+
+    #If stepup without compare/choose: return all fitted values as DataFrame
+    if stepup:
+        out = pd.DataFrame(
+            {name: res.fittedvalues for name, res in glm_results.items()},
+            index=scores_int,
+        )
+        out.index.name = "score"
+        return out
+
+    #Default: return smoothed frequencies as a Series
+    return pd.Series(
+        glm_results["model"].fittedvalues,
+        index=scores_int,
+        name="smoothed",
+    )
