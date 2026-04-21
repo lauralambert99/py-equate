@@ -374,3 +374,5 @@ def presmooth(
         index=scores_int,
         name="smoothed",
     )
+
+#TODO: convenience wrapper function to return smoothed freqs as one DataFrame and ANOVA fit stats as another.
