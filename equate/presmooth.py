@@ -7,12 +7,19 @@ Created on Tue Aug 19 11:19:35 2025
 
 import numpy as np
 import pandas as pd
+import statsmodels.tools as smt
+import statsmodels.api as sm
+import warnings
+
+from typing import Literal
 from statsmodels.genmod.generalized_linear_model import GLMResultsWrapper
 from scipy.optimize import minimize
 from scipy.stats import chi2
 
 
-
+# ---------------------------------------------------------------------------
+# Single Poisson GLM fit function
+# ---------------------------------------------------------------------------
 def _fit_glm(design: pd.DataFrame, counts: np.ndarray) -> GLMResultsWrapper:
     """
     Fit a Poisson log-linear model using IRLS.
@@ -31,7 +38,60 @@ def _fit_glm(design: pd.DataFrame, counts: np.ndarray) -> GLMResultsWrapper:
         result = model.fit(maxiter = 100, tol = 1e-8, disp = False)
     return result
 
+# ---------------------------------------------------------------------------
+# Orthogonal polynomial basis matrix
+# ---------------------------------------------------------------------------
+#Need this to prevent multicollinearity in higher-order terms
+#Mimicing poly() from R
 
+def _ortho_poly(x: np.ndarray, degree: int) -> np.ndarray:
+    """
+    Compute an orthogonal polynomial basis for `x` up to `degree`, using
+    the Gram-Schmidt process.
+
+    Parameters
+    ----------
+    x : 1-D array of predictor values (e.g. integer scores).
+    degree : maximum polynomial degree.
+
+    Returns
+    -------
+    Z : ndarray, shape (len(x), degree + 1)
+        Column 0 is the intercept (all ones); columns 1..degree are
+        orthogonal polynomial contrasts.
+    """
+    n = len(x)
+    Z = np.zeros((n, degree + 1))
+    Z[:, 0] = 1.0  #Intercept
+
+    if degree == 0:
+        return Z
+
+    #Gram-Schmidt orthogonalisation bit
+    Z[:, 1] = x - x.mean()
+
+    for k in range(2, degree + 1):
+        z_prev  = Z[:, k - 1]
+        z_prev2 = Z[:, k - 2]
+
+        v = x * z_prev
+        alpha = np.dot(v, z_prev) / np.dot(z_prev, z_prev)
+        beta  = np.dot(v, z_prev2) / np.dot(z_prev2, z_prev2)
+
+        Z[:, k] = v - alpha * z_prev - beta * z_prev2
+
+    #Normalise columns 1+ to unit norm
+    for k in range(1, degree + 1):
+        nrm = np.linalg.norm(Z[:, k])
+        if nrm > 0:
+            Z[:, k] /= nrm
+
+    return Z
+
+
+# ---------------------------------------------------------------------------
+# Overall function
+# ---------------------------------------------------------------------------
 def presmooth(
         freq: "array-like", 
         score_min: int, 
@@ -45,7 +105,7 @@ def presmooth(
         verbose: bool = False) -> pd.DataFrame | pd.Series | dict:
     """
     Perform log-linear Poisson presmoothing for a single form using polynomial
-    orders 1 to max_order.
+    orders.
 
     Parameters
     ----------
