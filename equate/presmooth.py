@@ -125,7 +125,55 @@ def _build_scorefun(
 
     return scorefun, models, mnames
 
+# ---------------------------------------------------------------------------
+# ANOVA table
+# ---------------------------------------------------------------------------
+#Report out some fit stats (Deviance, AIC, etc.) to allow model evaluation
 
+def _aovtab(
+    models: dict[str, GLMResultsWrapper],
+    counts: np.ndarray,) -> pd.DataFrame:
+    """
+    Build a deviance fit table comparing nested Poisson models.
+
+    Columns: Model, Df, Deviance, Resid.Df, Resid.Dev, Pr(>Chi), AIC, BIC
+    """
+    n = len(counts)
+    rows = []
+    prev_dev  = None
+    prev_df   = None
+    #model_names = list(models.keys())
+
+    for name, res in models.items():
+        df_resid = int(res.df_resid)
+        deviance = float(res.deviance)
+        aic      = float(res.aic)
+        n_params = int(res.df_model) + 1         #+1 for intercept
+        bic      = deviance + np.log(n) * n_params
+
+        if prev_dev is not None:  #For not-the-first-model
+            delta_df  = prev_df  - df_resid
+            delta_dev = prev_dev - deviance
+            p_val     = 1.0 - chi2.cdf(delta_dev, delta_df) if delta_df > 0 else np.nan
+        else:
+            delta_df  = np.nan
+            delta_dev = np.nan
+            p_val     = np.nan
+
+        rows.append({
+            "Model"    : name,
+            "Df"       : delta_df,
+            "Deviance" : delta_dev,
+            "Resid.Df" : df_resid,
+            "Resid.Dev": deviance,
+            "Pr(>Chi)" : p_val,
+            "AIC"      : aic,
+            "BIC"      : bic,
+        })
+        prev_dev = deviance
+        prev_df  = df_resid
+
+    return pd.DataFrame(rows).set_index("Model")
 
 # ---------------------------------------------------------------------------
 # Overall function
