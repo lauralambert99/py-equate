@@ -7,68 +7,29 @@ Created on Tue Aug 19 11:19:35 2025
 
 import numpy as np
 import pandas as pd
+import statsmodels.api as sm
 from scipy.optimize import minimize
-
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Aug 19 11:19:35 2025
-@author: laycocla
-
-Revised: statsmodels replaced with scipy for Poisson log-linear presmoothing.
-         Single-form input; output is wide-format with one column per order.
-"""
-import numpy as np
-import pandas as pd
-from scipy.optimize import minimize
+from scipy.stats import chi2
 
 
-def _fit_poisson_loglinear(X_design, counts):
+
+def _fit_glm(design: pd.DataFrame, counts: np.ndarray) -> sm.GLMResultsWrapper:
     """
-    Fit a Poisson log-linear model via maximum likelihood using scipy.
+    Fit a Poisson log-linear model using IRLS.
 
-    Minimizes the negative log-likelihood:
-        -sum(y * (X @ beta) - exp(X @ beta))
+    `design` should NOT include an intercept column
 
-    Parameters
-    ----------
-    X_design : np.ndarray, shape (n, p)
-        Design matrix (intercept + polynomial terms).
-    counts : np.ndarray, shape (n,)
-        Observed frequency counts.
-
-    Returns
-    -------
-    params : np.ndarray
-        Fitted coefficients.
-    success : bool
     """
-    n_params = X_design.shape[1]
-
-    def neg_loglik(beta):
-        eta = np.clip(X_design @ beta, -500, 500)
-        return -np.sum(counts * eta - np.exp(eta))
-
-    def grad(beta):
-        eta = np.clip(X_design @ beta, -500, 500)
-        return -X_design.T @ (counts - np.exp(eta))
-
-    result = minimize(
-        neg_loglik,
-        x0=np.zeros(n_params),
-        jac=grad,
-        method="L-BFGS-B",
-    )
-    if result.success:
-        return result.x, True
-    # Retry with tighter tolerance on failure
-    result2 = minimize(
-        neg_loglik,
-        x0=result.x,
-        jac=grad,
-        method="L-BFGS-B",
-        options={"ftol": 1e-9, "gtol": 1e-6, "maxiter": 500},
-    )
-    return result2.x, result2.success
+    X = sm.add_constant(design, has_constant = "add")
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        model = sm.GLM(
+            counts,
+            X,
+            family = sm.families.Poisson(),
+        )
+        result = model.fit(maxiter = 100, tol = 1e-8, disp = False)
+    return result
 
 
 def presmooth(freq, score_min, score_max, max_order=10):
