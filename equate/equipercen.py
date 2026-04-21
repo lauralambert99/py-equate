@@ -10,15 +10,39 @@ Created on Fri Mar 14 09:07:55 2025
 import numpy as np
 import pandas as pd
 from scipy.stats import skew, kurtosis
-from statsmodels.discrete.discrete_model import Poisson
-from statsmodels.tools import add_constant
+from typing import Literal
+
 #%%
+
+# ---------------------------------------------------------------------------
+# Find Y* function
+# ---------------------------------------------------------------------------
+ 
+def _find_y_star(px_val: float, Gy_arr: np.ndarray) -> int:
+    """
+    Return the index k such that Gy_arr[k] is the first value >= px_val.
+    Clipped to [0, len(Gy_arr) - 1].
+ 
+    Parameters
+    ----------
+    px_val : float
+        Percentile rank of an X score (0–100 scale).
+    Gy_arr : np.ndarray
+        Cumulative distribution of Y on a 0–100 scale.
+ 
+    Returns
+    -------
+    k : int
+        Index into Gy_arr / scores array.
+    """
+    k = int(np.searchsorted(Gy_arr, px_val, side="left"))
+    return min(k, len(Gy_arr) - 1)
 
 def equipercen(x = None, y = None, score_min = None, score_max = None, presmoothed_df = None, order = None):
     """
     A function to perform random groups equipercentile equating from two score vectors
     
-    Can accept raw vectors x, y or presmoothed_dict from presmooth().
+    Can accept raw vectors x, y or output from presmooth() as pd.Series, pd.DataFrame, or dict.
     
     Parameters
     ----------
@@ -54,7 +78,7 @@ def equipercen(x = None, y = None, score_min = None, score_max = None, presmooth
         # Cumulative distributions
         Fx = f_x.cumsum()
         Gy = g_y.cumsum()
-        Px = 100 * (Fx.shift(1, fill_value=0) + f_x / 2)
+        Px = 100 * (Fx.shift(1, fill_value=0) + f_x / 2) #Give cumulative proportion below score X
         Gy_100 = (Gy * 100).to_numpy()
 
         # Helper function for upper Y* index
@@ -73,7 +97,7 @@ def equipercen(x = None, y = None, score_min = None, score_max = None, presmooth
                 yhat = scores[k].astype(float)
             else:
                 # Linear interpolation within the Y bin, with 0.5 continuity correction
-                yhat = (scores[k] - 0.5) + ((px/100.0 - Glo) / (Ghi - Glo))
+                yhat = (float(scores[k]) - 0.5) + ((px/100.0 - Glo) / (Ghi - Glo))
             e_yx.append(float(yhat))
 
         equated_df = pd.DataFrame({'score': scores, 'equated': e_yx})
