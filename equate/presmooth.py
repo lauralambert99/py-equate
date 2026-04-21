@@ -7,13 +7,13 @@ Created on Tue Aug 19 11:19:35 2025
 
 import numpy as np
 import pandas as pd
-import statsmodels.api as sm
+from statsmodels.genmod.generalized_linear_model import GLMResultsWrapper
 from scipy.optimize import minimize
 from scipy.stats import chi2
 
 
 
-def _fit_glm(design: pd.DataFrame, counts: np.ndarray) -> sm.GLMResultsWrapper:
+def _fit_glm(design: pd.DataFrame, counts: np.ndarray) -> GLMResultsWrapper:
     """
     Fit a Poisson log-linear model using IRLS.
 
@@ -32,7 +32,17 @@ def _fit_glm(design: pd.DataFrame, counts: np.ndarray) -> sm.GLMResultsWrapper:
     return result
 
 
-def presmooth(freq, score_min, score_max, max_order=10):
+def presmooth(
+        freq: "array-like", 
+        score_min: int, 
+        score_max: int, 
+        degrees: list[int] | None = None,
+        scorefun: pd.DataFrame | None = None,
+        compare: bool = False,
+        choose: bool = False,
+        choosemethod: Litera["chi", "aic", "bic"] = "aic",
+        chip: float = 0.05,
+        verbose: bool = False) -> pd.DataFrame | pd.Series | dict:
     """
     Perform log-linear Poisson presmoothing for a single form using polynomial
     orders 1 to max_order.
