@@ -144,12 +144,12 @@ def _aovtab(
     prev_df   = None
     #model_names = list(models.keys())
 
-    for name, res in models.items():
+    for name, res in models.items(): #res = GLMResultsWrapper object
         df_resid = int(res.df_resid)
         deviance = float(res.deviance)
         aic      = float(res.aic)
         n_params = int(res.df_model) + 1         #+1 for intercept
-        bic      = deviance + np.log(n) * n_params
+        bic      = deviance + np.log(n) * n_params #np.log = ln
 
         if prev_dev is not None:  #For not-the-first-model
             delta_df  = prev_df  - df_resid
@@ -162,11 +162,11 @@ def _aovtab(
 
         rows.append({
             "Model"    : name,
-            "Df"       : delta_df,
-            "Deviance" : delta_dev,
-            "Resid.Df" : df_resid,
-            "Resid.Dev": deviance,
-            "Pr(>Chi)" : p_val,
+            "Df"       : delta_df, #Gain in df from previous model
+            "Deviance" : delta_dev, #Deviance decrease from previous model
+            "Resid.Df" : df_resid, #Remaining df
+            "Resid.Dev": deviance, #Remaining deviance
+            "Pr(>Chi)" : p_val, #p-value of increase in order
             "AIC"      : aic,
             "BIC"      : bic,
         })
