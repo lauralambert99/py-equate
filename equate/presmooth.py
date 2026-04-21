@@ -88,6 +88,44 @@ def _ortho_poly(x: np.ndarray, degree: int) -> np.ndarray:
 
     return Z
 
+# ---------------------------------------------------------------------------
+# Design matrix build (i.e., score function)
+# ---------------------------------------------------------------------------
+#Build matrix to pass to GLM fit
+def _build_scorefun(
+    scores: np.ndarray,
+    degrees: list[int],
+    stepup: bool,
+    compare: bool,) -> tuple[pd.DataFrame, list[int] | None, list[str] | None]:
+    """
+    Build the design matrix from orthogonal polynomials.
+
+    For a univariate design `degrees` is a list with one element, (e.g.
+    `[4]`)
+
+    Returns
+    -------
+    scorefun : DataFrame  — columns are named "s1", "s1^2", …
+    models   : list[int] | None
+    mnames   : list[str] | None
+    """
+    degree = int(degrees[0])  #Univariate: only the first element matters
+    Z = _ortho_poly(scores, degree)  #Shape (n, degree+1); col 0 = intercept
+
+    col_names = [f"s^{k}" for k in range(1, degree + 1)]
+    scorefun = pd.DataFrame(Z[:, 1:], columns = col_names)
+
+    if stepup or compare:
+        #Models[i] indicates which step model column i belongs to
+        models = list(range(1, degree + 1))   #Need +1 to include final degree b/c indexing difference
+        mnames = [f"Degree {d}" for d in range(1, degree + 1)]
+    else:
+        models = None
+        mnames = None
+
+    return scorefun, models, mnames
+
+
 
 # ---------------------------------------------------------------------------
 # Overall function
