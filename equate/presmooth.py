@@ -217,6 +217,7 @@ def presmooth(
         score_max: int, 
         degrees: list[int] | None = None,
         scorefun: pd.DataFrame | None = None,
+        stepup: bool | None = None,
         compare: bool = False,
         choose: bool = False,
         choosemethod: Litera["chi", "aic", "bic"] = "aic",
