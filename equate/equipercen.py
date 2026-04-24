@@ -194,7 +194,7 @@ def _freq_from_raw(
     return(
         s.value_counts()
          .reindex(range(score_min, score_max + 1), fill_value = 0)
-         .sort_indes()
+         .sort_index()
          .rename_axis("score")
          .astype(float))
 
