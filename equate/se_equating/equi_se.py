@@ -7,23 +7,47 @@ Created on Tue Aug 26 05:32:50 2025
 import numpy as np
 import pandas as pd
 
-def eq_see_asy(scores_x, freq_X, scores_y, freq_Y):
+#Pull in equipercen() functions for now
+from .equipercen import equipercen
+from .equipercen import _freq_from_smoothed
+from .equipercen import _freq_from_raw
+from .equipercen import _find_Y_star
+from .equipercen import _single_equip
+
+def eq_see_asy(
+        score_min: int, 
+        score_max: int,
+        x = None,
+        y = None,
+        x_smoothed = None,
+        y_smoothed = None,
+        x_degree = None,
+        y_degree = None,) -> pd.DataFrame:
     """
-    Calculate Standard Errors of Equating (SEE) for equipercentile equating
+    Calculate Standard Errors of Equating (SEE) for equipercentile equating, 
     using asymptotic SEE formula.
     
     Parameters
     ----------
-    freq_X : pd.Series
-        Frequencies for scores on form X, indexed by score (ascending).
-        Must be the same length as scores_X.
-    freq_Y : pd.Series
-        Frequencies for scores on form Y, indexed by score (ascending).
-        Must be the same length as scores_Y.
-    scores_X : array-like
-        Unique score points for form X (i.e., possible score range)
-    scores_Y : array-like
-        Unique score points for form Y
+    Parameters
+    ----------
+    score_min: int
+        Minimum possible score on both forms.
+    score_max: int
+        Maximum possible score on both forms.
+    x: array-like, optional
+        Raw score vector for Form X (the old form being equated FROM).
+    y: array-like, optional
+        Raw score vector for Form Y (the new form being equated TO).
+    x_smoothed: pd.Series | pd.DataFrame | dict, optional
+        Direct output of loglinear() for Form X.
+    y_smoothed: pd.Series | pd.DataFrame | dict, optional
+        Direct output of loglinear() for Form Y.
+    x_degree: int or str, optional
+        Degree to select when x_loglinear is a stepup DataFrame,
+        e.g. 4 or "Degree 4". Ignored for Series / choose-dict inputs.
+    y_degree: int or str, optional
+        Same as x_degree but for Form Y.
         
     Returns
     -------
@@ -33,97 +57,84 @@ def eq_see_asy(scores_x, freq_X, scores_y, freq_Y):
         - SEE : standard error of equating
     """
 
-    scores_x = np.array(scores_x, dtype=float)
-    freq_X = np.array(freq_X, dtype=float)
-    scores_y = np.array(scores_y, dtype=float)
-    freq_Y = np.array(freq_Y, dtype=float)
+    # ------------------------------------------------------------------
+    # Equipercentile Equating
+    # ------------------------------------------------------------------
+    equated_df = equipercen(
+        score_min = score_min,
+        score_max = score_max,
+        x = x,
+        y = y,
+        x_smoothed = x_smoothed,
+        y_smoothed = y_smoothed,
+        x_degree = x_degree,
+        y_degree = y_degree,)
     
-    #Make sure things are the same length
-    if len(scores_x) != len(freq_X):
-        raise ValueError(f"Length mismatch: scores_x ({len(scores_x)}) != freq_X ({len(freq_X)}).")
-    if len(scores_y) != len(freq_Y):
-        raise ValueError(f"Length mismatch: scores_y ({len(scores_y)}) != freq_Y ({len(freq_Y)}).")
-    
-    #Sample sizes
-    nX = np.sum(freq_X) 
-    nY = np.sum(freq_Y)
+    # ------------------------------------------------------------------
+    # Make frequency bits for SEE for smoothed scores
+    # ------------------------------------------------------------------
+    if x_smoothed is not None:
+        xfreq = _freq_from_smoothed(x_smoothed, score_min, score_max, x_degree)
+    else:
+        xfreq = _freq_from_raw(x, score_min, score_max)
+
+    if y_smoothed is not None:
+        yfreq = _freq_from_smoothed(y_smoothed, score_min, score_max, y_degree)
+    else:
+        yfreq = _freq_from_raw(y, score_min, score_max)
         
+    # ------------------------------------------------------------------
+    # Calculate SEE
+    # ------------------------------------------------------------------
+    #Sample sizes
+    nX = xfreq.sum()
+    nY = yfreq.sum()
+    
     #Probabilities
-    f_x = freq_X / nX
-    g_y = freq_Y / nY
+    f_x = (xfreq / nX).to_numpy()
+    g_y = (yfreq / nY).to_numpy()
     
     #Cumulative distributions
     Fx = np.cumsum(f_x)
     Gy = np.cumsum(g_y)
     
     #Percentiles
-    Px = np.zeros(len(scores_x))
+    Px = np.zeros(len(f_x))
     
-    for i in range(len(scores_x)):
+    for i in range(len(f_x)):
         if i == 0:
             Px[i] = f_x[i] / 2.0
         else:
             Px[i] = Fx[i-1] + f_x[i] / 2.0
     
-    Px = Px * 100
     Gy_100 = Gy * 100
     
-    def find_Y_star(px_val, Gy_val):
-        idx = np.searchsorted(Gy_val, px_val, side="left")
-        return min(idx, len(Gy_val)-1)
-
-    e_yx = []
-    
-    #This is the equating bit
-    for i, px in enumerate(Px):
-        k = find_Y_star(px, Gy_100)
-        Ghi = Gy[k]
-        Glo = Gy[k-1] if k > 0 else 0.0
+    se = np.zeros(len(f_x))
+    for j in range(len(f_x)):
+        k = min(int(np.searchsorted(Gy_100, Px[j]*100, side = "left")), len(Gy_100) - 1)
+        Gy_star = Gy[k]
         
-        if (Ghi <= Glo) or np.isclose(Ghi, Glo):
-            yhat = scores_y[k].astype(float)
-        else:
-            yhat = (scores_y[k] - 0.5) + ((px/100.0 - Glo) / (Ghi - Glo))
-            
-        e_yx.append(float(yhat))
+        #Cumulative probabilities
+        Ghi = Gy[k]  
+        Glo = Gy[k-1] if k > 0 else 0.0 
         
-        #This is the SEE bit
-        se = np.zeros(len(scores_x))
+        #Density interval: G(y*) - G(y*-1)
+        g0 = max((Ghi - Glo), 1e-10) #Prevent division by zero
         
-        for i in range(len(scores_x)):
-            px_val = Px[i] / 100.0
-            
-            #Find which Y scores bracket this percentile
-            k = np.searchsorted(Gy_100, Px[i], side="left")
-            k = min(k, len(Gy_100) - 1)
-            
-            #Cumulative probabilities
-            Ghi = Gy[k]  
-            Glo = Gy[k-1] if k > 0 else 0.0 
-            
-            #Density interval: G(y*) - G(y*-1)
-            g0 = Ghi - Glo
-            
-            #Don't divide by zero!
-            if g0 < 1e-10:
-                g0 = 1e-10
-            
-            #SE = sqrt((1-q)*q/(n_x*g0^2) + (1/(n_y*g0^2))*(gm - q^2 + ((q-gm)^2)/g0)) - this is how equate calculated it; used a density interval
-            #gm = Glo
-            
-            #Separate the terms to make math easier
-            term1 = (1 - px_val) * px_val / (nX * g0**2)
-            term2 = (1 / (nY * g0**2)) * (Glo - px_val**2 + ((px_val - Glo)**2) / g0)
-            var_eY = term1 + term2
-            
-            se[i] = np.sqrt(var_eY)
-
-    equated_df = pd.DataFrame({
-        'score': scores_x,
-        'equated': e_yx,
-        'SEE': se
-    })
+        #Separate the terms to make math easier
+        term1 = (1 - Px[j]) * Px[j] / (nX * g0**2)
+        term2 = (1 / (nY * g0**2)) * (Glo - Px[j]**2 + ((Px[j] - Glo)**2) / g0)
+        var_eY = term1 + term2
+        se[j] = np.sqrt(max(var_eY, 0.0)) #Prevent zero again
+        
+    equated_df['SEE'] = se
     
     return equated_df
-    
+        
+
+            
+#SE = sqrt((1-q)*q/(n_x*g0^2) + (1/(n_y*g0^2))*(gm - q^2 + ((q-gm)^2)/g0)) - this is how equate calculated it; used a density interval
+#gm = Glo
+#TODO: incorporate into equating functions
+
     
