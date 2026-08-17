@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyequate"
+version = "0.1.2.3"
+authors = [
+  { name="Laura Lambert", email="laycocla@jmu.edu" },
+  { name="Yu Bao", email="bao2yx@jmu.edu"}
+]
+description = "Score equating methods for testing"
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent"
+]
+dependencies = [
+    "scipy",
+    "pandas",
+    "numpy",
+    "statsmodels"]
+license = "GPL-3.0-or-later"
+license-files = ["LICEN[CS]E*"]
+
+[project.urls]
+Homepage = "https://github.com/lauralambert99/py-equate"
+Issues = "https://github.com/lauralambert99/py-equate/issues"
+
+[tool.setuptools.package-data]
+pyequate = ["datasets/*.csv"]
