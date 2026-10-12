@@ -7,7 +7,6 @@ Created on Fri Feb 21 10:54:01 2025
 
 import pandas as pd
 import numpy as np
-import itertools
 
 def linear(x, y, score_min, score_max, type="linear", rescale=False, group="Random"):
     """
@@ -19,10 +18,12 @@ def linear(x, y, score_min, score_max, type="linear", rescale=False, group="Rand
     score_min: minimum score on the form
     score_max: maximum score on the form
     type : str, optional
-        Type of equating. "mean" (mean equating),  "linear" (linear equating), "zscore" (z-score equating) are accepted
-        Default is "linear".
+        Type of equating. "mean" (mean equating) or "linear" (linear equating).
+        Default is "linear". (z-score equating, setting z_X(x) = z_Y(y), is linear equating.)
     rescale : bool, optional
-        Whether to rescale scores to a 0-100 range. Default is False.
+        If True, x, y and the score points are rescaled to 0-100 using the possible
+        score range (score_min..score_max), and 'ex' is reported on that 0-100 scale.
+        'Score' stays on the raw scale. Default is False.
     group: str, optional
         Type of group method of equating.  "Random" (Random groups design) and "Single" are accepted.
         Default is "Random".
@@ -43,14 +44,18 @@ def linear(x, y, score_min, score_max, type="linear", rescale=False, group="Rand
         #Make sure scores are paired for single group design
         if len(x) != len(y):
             raise ValueError("X and Y must have the same length for single-group equating (paired scores).")
-            
-    if rescale:
-        x = (x - np.min(x)) / (np.max(x) - np.min(x)) * 100
-        y = (y - np.min(y)) / (np.max(y) - np.min(y)) * 100
-    
+
     #Define scores
     scores = np.arange(score_min, score_max + 1)
-    
+    eq_points = scores.astype(float)
+
+    if rescale:
+        #Same transform for both forms and the score points, based on the possible score range
+        span = score_max - score_min
+        x = (np.asarray(x, dtype=float) - score_min) / span * 100
+        y = (np.asarray(y, dtype=float) - score_min) / span * 100
+        eq_points = (eq_points - score_min) / span * 100
+
     #Compute the means of x and y
     mean_x = np.mean(x)
     mean_y = np.mean(y)
@@ -64,17 +69,12 @@ def linear(x, y, score_min, score_max, type="linear", rescale=False, group="Rand
         sd_x = np.std(x)  #Standard deviation of x
         sd_y = np.std(y)  #Standard deviation of y
         slope = sd_y / sd_x  #Ratio of standard deviations
-        intercept = mean_y - slope * mean_x  
-    elif type == "zscore":
-        slope = 1
-        intercept = 0
-        x = (x - mean_x) / np.std(x)
-        y = (y - mean_y) / np.std(y)
+        intercept = mean_y - slope * mean_x
     else:
-        raise ValueError("Invalid 'type'. Use 'mean', 'linear', or 'zscore'.")
-    
-    ex = slope * scores + intercept
-    
+        raise ValueError("Invalid 'type'. Use 'mean' or 'linear'.")
+
+    ex = slope * eq_points + intercept
+
     eq =  pd.DataFrame({'Score': scores,
                         'ex': ex})
     #Return equated scores as a dataframe
