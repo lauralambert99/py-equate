@@ -28,7 +28,8 @@ def common_item_marginal(joint_probs: pd.DataFrame, exclude_last_n: int = 2) -> 
     marginal_row = joint_probs[include_cols].sum(axis = 0)
 
     # Fill the excluded columns with NaNs to maintain shape
-    for col in joint_probs.columns[-exclude_last_n:]:
+    excluded_cols = joint_probs.columns[-exclude_last_n:] if exclude_last_n > 0 else []
+    for col in excluded_cols:
         marginal_row[col] = pd.NA
 
     # Append the marginal row with a label
