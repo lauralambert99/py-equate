@@ -10,7 +10,7 @@ Created on Wed May 14 10:30:15 2025
 import numpy as np
 import pandas as pd
 
-from ..helper_fxns.equip_map import equip_map
+from ..helper_fxns.equip_map import equip_map, percentile_rank, inverse_percentile_rank
 
 def chained(x, y, common_x, common_y, score_min, score_max, anchor_min, anchor_max, type = "linear"):
     """
@@ -63,6 +63,13 @@ def chained(x, y, common_x, common_y, score_min, score_max, anchor_min, anchor_m
         score_pts = range(score_min, score_max + 1)
         anchor_pts = range(anchor_min, anchor_max + 1)
 
+        #Refuse scores outside the requested ranges rather than silently dropping examinees
+        for name, s, pts in [("x", x, score_pts), ("y", y, score_pts),
+                             ("common_x", common_x, anchor_pts), ("common_y", common_y, anchor_pts)]:
+            out = sorted(set(s.dropna()) - set(pts))
+            if out:
+                raise ValueError(f"Scores in '{name}' outside the given score range: {out}")
+
         #Frequency tables, keeping score points nobody obtained
         f_x = x.value_counts().reindex(score_pts, fill_value=0).sort_index()
         h1_v = common_x.value_counts().reindex(anchor_pts, fill_value=0).sort_index()
@@ -72,11 +79,9 @@ def chained(x, y, common_x, common_y, score_min, score_max, anchor_min, anchor_m
         #Form X to common items in Population 1: e_V1(x)
         e_vx = equip_map(f_x, h1_v)
 
-        #Common items to Form Y in Population 2: e_Y2(v)
-        e_yv = equip_map(h2_v, g_y)
-
-        #Chain them: e_Y(x) = e_Y2(e_V1(x)); e_V1(x) is non-integer, so interpolate e_Y2
-        e_yx = np.interp(e_vx, np.asarray(anchor_pts, dtype=float), e_yv)
+        #Common items to Form Y in Population 2, evaluated at the non-integer e_V1(x):
+        #e_Y(x) = G2^-1( P2( e_V1(x) ) )
+        e_yx = inverse_percentile_rank(g_y, percentile_rank(h2_v, e_vx))
 
         return pd.DataFrame({'Score': scores,
                              'e_yx': e_yx})

@@ -43,3 +43,39 @@ def test_eq_float_scores(kb):
     x, y, vx, vy = (s.astype(float) for s in kb)
     out = chained(x, y, vx, vy, 0, 36, 0, 12, type="eq")
     np.testing.assert_allclose(out["e_yx"], chained(*kb, 0, 36, 0, 12, type="eq")["e_yx"])
+
+
+def _prank_knots(freq):
+    #K&B Eq. 2.14: percentile rank is piecewise linear with knots at score - 0.5
+    pts = freq.index.to_numpy(dtype=float)
+    knots = np.append(pts - 0.5, pts[-1] + 0.5)
+    vals = np.append(0.0, (freq / freq.sum()).cumsum().to_numpy())
+    return knots, vals
+
+
+def test_eq_matches_continuous_kolen_brennan_chain(kb):
+    #e_Y(x) = G2^-1( P2( e_V1(x) ) ), every step via the continuous percentile-rank function
+    x, y, vx, vy = kb
+    fr = lambda s, hi: s.value_counts().reindex(range(hi + 1), fill_value=0).sort_index()
+    kx_, px_ = _prank_knots(fr(x, 36))
+    kv1, pv1 = _prank_knots(fr(vx, 12))
+    kv2, pv2 = _prank_knots(fr(vy, 12))
+    ky_, py_ = _prank_knots(fr(y, 36))
+    pts = np.arange(37.0)
+    e_v = np.interp(np.interp(pts, kx_, px_), pv1, kv1)
+    ref = np.interp(np.interp(e_v, kv2, pv2), py_, ky_)
+    out = chained(*kb, 0, 36, 0, 12, type="eq")["e_yx"].to_numpy()
+    interior = (fr(x, 36).to_numpy() > 0) & (pts >= 3) & (pts <= 35)
+    np.testing.assert_allclose(out[interior], ref[interior], atol=1e-8)
+
+
+def test_eq_strictly_increasing_where_x_has_mass(kb):
+    out = chained(*kb, 0, 36, 0, 12, type="eq")["e_yx"].to_numpy()
+    has_mass = kb[0].value_counts().reindex(range(37), fill_value=0).to_numpy() > 0
+    assert np.all(np.diff(out[has_mass]) > 0)
+
+
+def test_eq_out_of_range_score_raises(kb):
+    #KBneatx totals run 2..36
+    with pytest.raises(ValueError, match="outside"):
+        chained(*kb, 5, 36, 0, 12, type="eq")
