@@ -8,7 +8,6 @@ Created on Wed May 28 09:00:35 2025
 #Discussion: how to best define these so it's clear which form is which?  
 
 import pandas as pd
-import numpy as np
 
 #This gets the joint distributions of uncommon and common items
 #Also calculates marginal and cumulative distributions for the uncommon items
@@ -27,30 +26,34 @@ def joint_distribution(df, form_col, common_col, form_range = None, common_range
         
     Returns:
         pd.DataFrame: Joint distribution with marginal and cumulative probabilities
+
+    Raises:
+        ValueError: if any score falls outside form_range or common_range
     """
     
+    form_scores = df[form_col]
+    common_scores = df[common_col]
+
     #Determine score ranges from data if not provided
     if form_range is None:
-        form_range = range(df[form_col].min(), df[form_col].max() + 1)
+        form_range = range(int(form_scores.min()), int(form_scores.max()) + 1)
 
     if common_range is None:
-        common_range = range(df[common_col].min(), df[common_col].max() + 1)
+        common_range = range(int(common_scores.min()), int(common_scores.max()) + 1)
 
+    #Refuse scores outside the requested ranges rather than silently reshaping the table
+    out_x = sorted(set(form_scores.dropna()) - set(form_range))
+    out_v = sorted(set(common_scores.dropna()) - set(common_range))
+    if out_x:
+        raise ValueError(f"Scores in '{form_col}' outside form_range: {out_x}")
+    if out_v:
+        raise ValueError(f"Scores in '{common_col}' outside common_range: {out_v}")
 
-    #Make an empty joint frequency table
-    joint = pd.DataFrame(0, index = form_range, columns = common_range)
-    
-    #Count joint occurrences
-    for _, row in df.iterrows():
-        x = row[form_col]
-        v = row[common_col]
-        if x in joint.index and v in joint.columns:
-            joint.at[x, v] += 1
-        else:
-            #Optionally add missing score to table instead of skipping
-            joint = joint.reindex(index=sorted(set(joint.index).union({x})))
-            joint = joint.reindex(columns=sorted(set(joint.columns).union({v})))
-            joint.at[x, v] = 1  #Initialize to 1 (was 0, now first seen)
+    #Joint frequency table, including score points nobody obtained
+    joint = pd.crosstab(form_scores, common_scores).reindex(
+        index=list(form_range), columns=list(common_range), fill_value=0)
+    joint.index.name = None
+    joint.columns.name = None
 
     #Normalize to probabilities
     total = joint.to_numpy().sum()
