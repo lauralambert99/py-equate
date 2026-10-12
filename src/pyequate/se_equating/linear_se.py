@@ -49,7 +49,7 @@ def linear_se(formX, formY, x_scores = None):
 
     for i, x in enumerate(x_scores):
         d_mu_y = 1
-        d_mu_x = -sd_x / sd_y
+        d_mu_x = -sd_y / sd_x
         d_sd_y = (x - mu_x) / sd_x
         d_sd_x = -sd_y * (x - mu_x) / (sd_x ** 2)
 
