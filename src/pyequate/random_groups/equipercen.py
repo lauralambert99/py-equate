@@ -23,9 +23,9 @@ def equipercen(x = None, y = None, score_min = None, score_max = None, presmooth
     Parameters
     ----------
     x : list or pd.Series
-        Scores on the OLD form.
-    y : list or pd.Series
         Scores on the NEW form.
+    y : list or pd.Series
+        Scores on the OLD form.
     score_min : int
         Minimum possible score.
     score_max : int

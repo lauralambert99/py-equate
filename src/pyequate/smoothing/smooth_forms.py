@@ -45,10 +45,10 @@ def smooth_forms(x, y, score_min, score_max, degrees=None):
     Parameters
     ----------
     x : array-like
-        Observed score frequencies for the X (OLD) form, ordered from
+        Observed score frequencies for the X (NEW) form, ordered from
         ``score_min`` to ``score_max`` (or a Series/dict indexed by score).
     y : array-like
-        Observed score frequencies for the Y (NEW) form.
+        Observed score frequencies for the Y (OLD) form.
     score_min : int
         Minimum possible score.
     score_max : int
