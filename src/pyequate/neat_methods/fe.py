@@ -8,6 +8,7 @@ Created on Wed May 14 07:06:55 2025
 from ..freq_tab.common_item_marginal import common_item_marginal
 from ..freq_tab.conditional_distribution import conditional_distribution
 from ..freq_tab.reweight_conditional_distribution import reweight_conditional_distribution
+from ..helper_fxns.equip_map import equip_map
 
 
 import pandas as pd
@@ -93,48 +94,13 @@ def fe(gx, gy, score_min, score_max, w1):
     fsx = w1*f1x + w2*f2x_2
     gsy = w1*g1y_2 + w2*g2y
   
-  #Cumulative synthetic distributions
-    Fsx = fsx.cumsum()
-    Gsy = gsy.cumsum()
-  
-    Psx = 100*(Fsx.shift(1, fill_value = 0) + fsx/2)
-  
-  #Make G(y) * 100 value column - easier to reference this
-    Gsy_100 = Gsy*100
+    if len(fsx) != len(scores) or len(gsy) != len(scores):
+        raise ValueError("Joint distributions must cover exactly score_min..score_max; "
+                         "pass form_range=range(score_min, score_max + 1) to joint_distribution().")
 
-  #Make a function to take each P(x) value and find the smallest Gy_100 value that is => to it
+  #Equipercentile equating of the synthetic distributions
+    fsx = pd.Series(fsx.to_numpy(dtype=float), index=scores)
+    gsy = pd.Series(gsy.to_numpy(dtype=float), index=scores)
+    e_yx = equip_map(fsx, gsy)
 
-  #But what we really want is the corresponding Y value
-
-    def find_Y_star(Psx, Gsy, Y):
-      idx = np.searchsorted(Gsy, Psx, side="left")
-      return Y[idx] if idx < len(Y) else None
-
-    scores = scores
-    
-    
-    pdata = pd.DataFrame({
-      'Score': scores, 
-      'fsx': fsx.values, 
-      'gsy': gsy.values, 
-      'Fsx': Fsx.values, 
-      'Gsy': Gsy.values,
-      'Psx': Psx.values,
-      'Gsy_100': Gsy_100.values
-  })
-
-  #Use the function to make a new column 
-    pdata['Y_star_u'] = pdata['Psx'].apply(lambda Psx: find_Y_star(Psx, pdata['Gsy_100'], pdata['Score']))
-
-  #Compute G(Y*u)
-    pdata['Gsy_star'] = pdata['Y_star_u'].apply(lambda y_star: Gsy[y_star] if pd.notna(y_star) else None)
-  
-  #Will also need a lag Y*u for equation
-    pdata['Gsy_star_lag'] = pdata['Y_star_u'].apply(lambda y_star: Gsy[y_star - 1] if pd.notna(y_star) and y_star > score_min else None)
-
-  # Compute equated scores
-    pdata['e_yx'] = ((((pdata['Psx'] / 100) - pdata['Gsy_star_lag']) / 
-                    (pdata['Gsy_star'] - pdata['Gsy_star_lag'])) + 
-                    (pdata['Y_star_u'] - 0.5))
-
-    return pdata[['Score', 'e_yx']]
+    return pd.DataFrame({'Score': scores, 'e_yx': e_yx})
