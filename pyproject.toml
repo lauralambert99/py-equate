@@ -30,3 +30,9 @@ Issues = "https://github.com/lauralambert99/py-equate/issues"
 
 [tool.setuptools.package-data]
 pyequate = ["datasets/*.csv"]
+[project.optional-dependencies]
+test = ["pytest"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
