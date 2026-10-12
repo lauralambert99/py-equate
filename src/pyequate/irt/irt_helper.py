@@ -218,7 +218,7 @@ def equipercentile_irt(fx, fy):
             
             if idx == 0:
                 #px is below first cumulative probability
-                eyx[i] = px / Gy[0] if Gy[0] > 0 else 0.0
+                eyx[i] = -0.5 + px / Gy[0] if Gy[0] > 0 else 0.0
             elif idx >= n_y:
                 #px is above last cumulative probability
                 eyx[i] = float(n_y - 1)
