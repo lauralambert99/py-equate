@@ -21,3 +21,10 @@ def test_irtOS_identity_same_form(params):
     px, _ = params
     out = irtOS(px, px, theta_points=40, model="3pl")
     np.testing.assert_allclose(out["eyx"], out["Scale"], atol=1e-8)
+
+
+def test_irtTS_default_range_uses_form_x(params):
+    px, py = params
+    out = irtTS(px, py.iloc[:30], model="3pl")  #X has 36 items, Y has 30
+    assert len(out) == 37
+    np.testing.assert_array_equal(out["X"], np.arange(37))

@@ -53,7 +53,7 @@ def irtTS(formX_params, formY_params, score_range=None, model='2pl', D=1.7, A=1.
     
     #Determine score range
     if score_range is None:
-        score_max = len(formY_params)
+        score_max = len(formX_params)
         score_range = np.arange(0, score_max + 1)
     
     #For each observed score, find theta using root finding
