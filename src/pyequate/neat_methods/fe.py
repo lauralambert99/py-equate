@@ -9,6 +9,7 @@ from ..freq_tab.common_item_marginal import common_item_marginal
 from ..freq_tab.conditional_distribution import conditional_distribution
 from ..freq_tab.reweight_conditional_distribution import reweight_conditional_distribution
 from ..helper_fxns.equip_map import equip_map
+from ..freq_tab.joint_distribution import _check_score_index
 
 
 import pandas as pd
@@ -51,7 +52,9 @@ def fe(gx, gy, score_min, score_max, w1):
     where `df` is a data frame containing raw score data, `form_col` is the column name for total score, and `common_col` is the column name for the common (or anchor) items
 
 """
-
+    _check_score_index(gx, score_min, score_max, 'gx')
+    _check_score_index(gy, score_min, score_max, 'gy')
+    
     #Define weights
     w2 = (1 - w1)
     
@@ -94,10 +97,6 @@ def fe(gx, gy, score_min, score_max, w1):
     fsx = w1*f1x + w2*f2x_2
     gsy = w1*g1y_2 + w2*g2y
   
-    if len(fsx) != len(scores) or len(gsy) != len(scores):
-        raise ValueError("Joint distributions must cover exactly score_min..score_max; "
-                         "pass form_range=range(score_min, score_max + 1) to joint_distribution().")
-
   #Equipercentile equating of the synthetic distributions
     fsx = pd.Series(fsx.to_numpy(dtype=float), index=scores)
     gsy = pd.Series(gsy.to_numpy(dtype=float), index=scores)

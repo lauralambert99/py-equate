@@ -37,14 +37,7 @@ def lord_wingersky_distribution(params, theta_grid, model='2pl', D=1.7):
     n_items = len(a)
 
     def get_fn(a_i, b_i, c_i):
-        if model == '1pl':
-            return lambda t: c_i + (1 - c_i) / (1 + np.exp(-D * (t - b_i)))
-        elif model == '2pl':
-            return lambda t: c_i + (1 - c_i) / (1 + np.exp(-D * a_i * (t - b_i)))
-        elif model == '3pl':
-            return lambda t: c_i + (1 - c_i) / (1 + np.exp(-D * a_i * (t - b_i)))
-        else:
-            raise ValueError(f"Unknown model: {model}")
+        return lambda t: irt_prob(t, a_i, b_i, c_i, model = model, D = D)
 
     irt_fns = [get_fn(a[i], b[i], c[i]) for i in range(n_items)]
 

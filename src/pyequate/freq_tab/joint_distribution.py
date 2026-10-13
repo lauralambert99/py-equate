@@ -9,6 +9,17 @@ Created on Wed May 28 09:00:35 2025
 
 import pandas as pd
 
+#Make sure to check row labels, not just the length
+def _check_score_index(table, score_min, score_max, name):
+    """Raise if a joint_distribution table's rows are not exactly score_min..score_max."""
+    expected = list(range(score_min, score_max + 1))
+    if list(table.index) != expected:
+        raise ValueError(
+            f"Rows of '{name}' must be scores {score_min}..{score_max}; "
+            f"got {table.index.min()}..{table.index.max()}. "
+            "Pass form_range=range(score_min, score_max + 1) to joint_distribution()."
+        )
+        
 #This gets the joint distributions of uncommon and common items
 #Also calculates marginal and cumulative distributions for the uncommon items
 #Need to add marginal distibution for common items as a row

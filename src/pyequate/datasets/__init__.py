@@ -53,4 +53,4 @@ def load_dataset(name):
             f"No bundled dataset named {name!r}. Available datasets: {available}"
         )
     with resource.open("r") as f:
-        return pd.read_csv(f)
+        return pd.read_csv(f, index_col=0).reset_index(drop=True)

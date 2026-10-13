@@ -4,14 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyequate"
-version = "0.1.2.3"
+version = "0.2.0"
 authors = [
   { name="Laura Lambert", email="laycocla@jmu.edu" },
   { name="Yu Bao", email="bao2yx@jmu.edu"}
 ]
 description = "Score equating methods for testing"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent"

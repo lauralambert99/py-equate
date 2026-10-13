@@ -8,11 +8,14 @@ Created on Wed May 14 07:06:59 2025
 from ..freq_tab.common_item_marginal import common_item_marginal
 from ..freq_tab.conditional_distribution import conditional_distribution
 from ..freq_tab.reweight_conditional_distribution import reweight_conditional_distribution
+from ..freq_tab.joint_distribution import _check_score_index
 
 
 import pandas as pd
 import numpy as np
 
+
+    
 def bh(x, y, gx, gy, score_min, score_max, w1):
     """
   Perform Braun-Holland equating.
@@ -36,7 +39,10 @@ def bh(x, y, gx, gy, score_min, score_max, w1):
 
   Returns:
   DataFrame of equated scores
-  """
+  """    
+    _check_score_index(gx, score_min, score_max, 'gx')
+    _check_score_index(gy, score_min, score_max, 'gy')
+  
   #Define weights
     w2 = (1 - w1)
 

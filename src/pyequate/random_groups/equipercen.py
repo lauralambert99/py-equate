@@ -9,9 +9,7 @@ Created on Fri Mar 14 09:07:55 2025
 #Load in dependent packages
 import numpy as np
 import pandas as pd
-from scipy.stats import skew, kurtosis
-from statsmodels.discrete.discrete_model import Poisson
-from statsmodels.tools import add_constant
+
 #%%
 
 def equipercen(x = None, y = None, score_min = None, score_max = None, presmoothed_df = None, order = None):
